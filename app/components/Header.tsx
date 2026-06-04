@@ -86,6 +86,7 @@ export default function Header() {
                   src="https://avatars.githubusercontent.com/u/171383675?v=4"
                   alt="S. SHAJON Avatar"
                   fill
+                  sizes="(max-width: 640px) 36px, 44px"
                   className="object-cover"
                 />
               </div>
