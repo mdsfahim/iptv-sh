@@ -1,6 +1,8 @@
-# IPTV Player — Watch Live TV Channels
+# 📺 IPTV Player — Watch Live TV Channels
 
 A modern, high-performance, and premium web-based IPTV player built with **Next.js 16**, **React 19**, **Three.js**, and **Tailwind CSS v4**. Stream high-quality live TV channels directly from official broadcast sources with a cinematic user interface.
+
+Web Player: https://tools.shajon.dev/iptv
 
 ---
 
@@ -12,6 +14,47 @@ A modern, high-performance, and premium web-based IPTV player built with **Next.
 - ⚡ **Full Skeleton UI Loading States**: Fully unified, custom-designed pulsing skeleton templates for every card element (Player, Details, Developer Info, Total Channels, and Channel List grid) to prevent layout shifts.
 - 💳 **Developer Profile Card**: Vertically stacked and horizontally divided glassmorphic cards display developer credentials (**S. SHAJON**) alongside interactive profiles (GitHub, Telegram, Facebook) and contact methods.
 - 🧭 **Glassmorphic Sticky Header**: A tall, luxurious sticky header with brand identification, active live broadcast pulsing status, and developer contact badges.
+
+---
+
+## 🌍 1220+ Live TV Channels Database
+
+This project also includes a curated, lightweight JSON-based IPTV channel database containing 1220+ live TV channels from multiple countries and categories, collected from publicly available open-source repositories and broadcast streams.
+
+### 📂 Data Structure
+
+Each channel is stored in JSON format:
+
+```json
+{
+  "name": "Ananda TV",
+  "logo": "https://example.com/logo.png",
+  "group": "Bangla",
+  "url": "https://example.com/stream.m3u8"
+}
+```
+
+### 💻 Usage Example
+
+#### JavaScript
+```js
+fetch("https://raw.githubusercontent.com/SHAJON-404/iptv/refs/heads/main/channels.json")
+  .then(res => res.json())
+  .then(data => {
+    console.log(data);
+  });
+```
+
+#### Python
+```python
+import requests
+
+channels = requests.get(
+    "https://raw.githubusercontent.com/SHAJON-404/iptv/refs/heads/main/channels.json"
+).json()
+
+print(channels[0])
+```
 
 ---
 
@@ -62,7 +105,21 @@ npm start
 
 ---
 
-## ⚠️ License & Compliance
+## ⚠️ Disclaimer
+
+This repository does not host, store, retransmit, or own any television channels or media content. The JSON file and web player only reference publicly available stream links collected from open-source IPTV playlists and public internet sources. Channel availability may change, expire, or stop working at any time.
+
+If you are the copyright owner of any content and would like it removed, please open an issue or contact the developer.
+
+---
+
+## ❤️ Credits
+
+Special thanks to all IPTV open-source repository maintainers and contributors whose publicly available playlists and stream sources make this collection and player possible.
+
+---
+
+## 📄 License & Compliance
 
 This project is open-source software licensed under the **GNU General Public License v3 (GPLv3)**.
 
