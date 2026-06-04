@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# IPTV Player — Watch Live TV Channels
 
-## Getting Started
+A modern, high-performance, and premium web-based IPTV player built with **Next.js 16**, **React 19**, **Three.js**, and **Tailwind CSS v4**. Stream high-quality live TV channels directly from official broadcast sources with a cinematic user interface.
 
-First, run the development server:
+---
 
+## ✨ Features
+
+- 📺 **Cinematic Video Player**: Large, center-aligned, aspect-ratio locked media container utilizing HLS.js and native iOS Safari player engines. Supports Picture-in-Picture (PiP), custom volume controls, double-tap seek, and auto-fallback muted play.
+- 🌌 **Three.js Cybernetic Background**: Dynamic WebGL particle flow field featuring parallax camera coordinates responsive to mouse movements, a moving neon grid floor, and glowing orbital space structures.
+- 🔍 **Interactive Channel Grid**: Filter and search through thousands of Bangla and international live TV channels in real-time. Responsive grid display dynamically adjusts for mobile, tablet, and desktop viewports.
+- ⚡ **Full Skeleton UI Loading States**: Fully unified, custom-designed pulsing skeleton templates for every card element (Player, Details, Developer Info, Total Channels, and Channel List grid) to prevent layout shifts.
+- 💳 **Developer Profile Card**: Vertically stacked and horizontally divided glassmorphic cards display developer credentials (**S. SHAJON**) alongside interactive profiles (GitHub, Telegram, Facebook) and contact methods.
+- 🧭 **Glassmorphic Sticky Header**: A tall, luxurious sticky header with brand identification, active live broadcast pulsing status, and developer contact badges.
+
+---
+
+## 🛠️ Technology Stack
+
+- **Framework**: [Next.js 16 (App Router)](https://nextjs.org/)
+- **Library**: [React 19](https://react.dev/)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **3D Graphics**: [Three.js](https://threejs.org/) (for WebGL background effects)
+- **Animations**: [Motion](https://motion.dev/) (formerly Framer Motion)
+- **Stream Engine**: [HLS.js](https://github.com/video-dev/hls.js/)
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+Ensure you have **Node.js** (v18.x or newer) installed.
+
+### Installation
+
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/SHAJON-404/iptv.git
+   cd iptv
+   ```
+
+2. Install the dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser to view the application.
+
+### Production Build
+
+To build the application for production:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ⚠️ License & Compliance
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This project is open-source software licensed under the **GNU General Public License v3 (GPLv3)**.
 
-## Learn More
+### Open Source Compliance Guidelines:
+1. **Copyleft Protection**: Any extensions, improvements, or derivative works built on top of this codebase must also be open-sourced and distributed under the same GPLv3 license.
+2. **Preserve Developer Attribution**: You must preserve all S. SHAJON copyright, developer profile links (GitHub, Telegram, Facebook), and licensing labels in both the user interface and code files.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Developed with ♥ by [S. SHAJON](https://t.me/SHAJON). Follow [GitHub Profile](https://github.com/SHAJON-404) for updates.
