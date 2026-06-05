@@ -22,7 +22,8 @@ import {
   Check,
   FileText,
   AlertCircle,
-  FolderOpen
+  FolderOpen,
+  RotateCw
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import Hls from "hls.js";
@@ -100,6 +101,7 @@ export default function IPTVPlayer() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPip, setIsPip] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [isRotated, setIsRotated] = useState(false);
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmuteCleanupRef = useRef<(() => void) | null>(null);
 
@@ -195,11 +197,46 @@ export default function IPTVPlayer() {
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const isFs = !!document.fullscreenElement;
+      setIsFullscreen(isFs);
+      if (!isFs) {
+        setIsRotated(false);
+        const orientation = window.screen?.orientation as any;
+        if (
+          window.screen &&
+          orientation &&
+          typeof orientation.unlock === "function"
+        ) {
+          orientation.unlock();
+        }
+      }
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isRotated) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isRotated]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsRotated(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
 
@@ -293,6 +330,18 @@ export default function IPTVPlayer() {
     if (!document.fullscreenElement) {
       container
         .requestFullscreen()
+        .then(() => {
+          const orientation = window.screen?.orientation as any;
+          if (
+            window.screen &&
+            orientation &&
+            typeof orientation.lock === "function"
+          ) {
+            orientation
+              .lock("landscape")
+              .catch((err: any) => console.warn("Auto lock landscape failed:", err));
+          }
+        })
         .catch((err) => console.warn("Fullscreen request failed:", err));
     } else {
       document
@@ -301,6 +350,39 @@ export default function IPTVPlayer() {
     }
     resetControlsTimeout();
   };
+
+  const handleToggleOrientation = useCallback(async () => {
+    const container = playerContainerRef.current;
+    if (!container) return;
+
+    const orientation = window.screen?.orientation as any;
+    if (
+      window.screen &&
+      orientation &&
+      typeof orientation.lock === "function"
+    ) {
+      try {
+        if (!document.fullscreenElement) {
+          await container.requestFullscreen();
+          await orientation.lock("landscape");
+        } else {
+          const type = orientation.type;
+          if (type.startsWith("landscape")) {
+            await orientation.lock("portrait");
+          } else {
+            await orientation.lock("landscape");
+          }
+        }
+        setIsRotated(false);
+      } catch (err) {
+        console.warn("Screen orientation lock failed, falling back to CSS rotation:", err);
+        setIsRotated((prev) => !prev);
+      }
+    } else {
+      setIsRotated((prev) => !prev);
+    }
+    resetControlsTimeout();
+  }, [resetControlsTimeout]);
 
   const handleSeek = (seconds: number) => {
     const video = videoRef.current;
@@ -1068,7 +1150,11 @@ export default function IPTVPlayer() {
               onMouseMove={handleMouseMove}
               onClick={handlePlayerClick}
               onDoubleClick={handlePlayerDoubleClick}
-              className={`relative aspect-video rounded-2xl md:rounded-3xl overflow-hidden bg-black border border-white/5 shadow-2xl group ${
+              className={`bg-black shadow-2xl group transition-all duration-300 ${
+                isRotated
+                  ? "fixed z-[9999] top-1/2 left-1/2 w-[100vh] h-[100vw] -translate-x-1/2 -translate-y-1/2 rotate-90 origin-center"
+                  : "relative aspect-video rounded-2xl md:rounded-3xl overflow-hidden bg-black border border-white/5 w-full"
+              } ${
                 showControls ? "cursor-default" : "cursor-none"
               }`}
             >
@@ -1314,6 +1400,15 @@ export default function IPTVPlayer() {
                         <PictureInPicture size={18} />
                       </button>
                     )}
+                    <button
+                      onClick={handleToggleOrientation}
+                      className={`p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors ${
+                        isRotated ? "text-primary bg-white/10" : ""
+                      }`}
+                      title="Rotate Screen"
+                    >
+                      <RotateCw size={18} />
+                    </button>
                     <button
                       onClick={handleFullscreen}
                       className="p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors"
