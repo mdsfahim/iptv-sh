@@ -194,7 +194,12 @@ export default function IPTVPlayer() {
       setIsFullscreen(isFs);
       if (!isFs) {
         setIsRotated(false);
-        const orientation = window.screen?.orientation as any;
+        const orientation = window.screen?.orientation as unknown as {
+          type: string;
+          angle: number;
+          lock?: (orientation: "portrait" | "landscape" | "portrait-primary" | "portrait-secondary" | "landscape-primary" | "landscape-secondary" | "any" | "natural") => Promise<void>;
+          unlock?: () => void;
+        };
         if (
           window.screen &&
           orientation &&
@@ -324,7 +329,12 @@ export default function IPTVPlayer() {
       container
         .requestFullscreen()
         .then(() => {
-          const orientation = window.screen?.orientation as any;
+          const orientation = window.screen?.orientation as unknown as {
+            type: string;
+            angle: number;
+            lock?: (orientation: "portrait" | "landscape" | "portrait-primary" | "portrait-secondary" | "landscape-primary" | "landscape-secondary" | "any" | "natural") => Promise<void>;
+            unlock?: () => void;
+          };
           if (
             window.screen &&
             orientation &&
@@ -332,7 +342,7 @@ export default function IPTVPlayer() {
           ) {
             orientation
               .lock("landscape")
-              .catch((err: any) => console.warn("Auto lock landscape failed:", err));
+              .catch((err) => console.warn("Auto lock landscape failed:", err));
           }
         })
         .catch((err) => console.warn("Fullscreen request failed:", err));
@@ -348,7 +358,12 @@ export default function IPTVPlayer() {
     const container = playerContainerRef.current;
     if (!container) return;
 
-    const orientation = window.screen?.orientation as any;
+    const orientation = window.screen?.orientation as unknown as {
+      type: string;
+      angle: number;
+      lock?: (orientation: "portrait" | "landscape" | "portrait-primary" | "portrait-secondary" | "landscape-primary" | "landscape-secondary" | "any" | "natural") => Promise<void>;
+      unlock?: () => void;
+    };
     if (
       window.screen &&
       orientation &&
@@ -520,14 +535,18 @@ export default function IPTVPlayer() {
         const parsedSaved = JSON.parse(saved) as Playlist[];
         const customPlaylists = parsedSaved.filter(p => p.id !== "default");
 
-        setPlaylists(prev => [
-          prev[0], // Keep default
-          ...customPlaylists
-        ]);
+        setTimeout(() => {
+          setPlaylists(prev => [
+            prev[0], // Keep default
+            ...customPlaylists
+          ]);
+        }, 0);
       }
 
       if (savedActiveId) {
-        setActivePlaylistId(savedActiveId);
+        setTimeout(() => {
+          setActivePlaylistId(savedActiveId);
+        }, 0);
       }
     } catch (e) {
       console.error("Failed to load playlists from localStorage:", e);
@@ -589,24 +608,29 @@ export default function IPTVPlayer() {
   useEffect(() => {
     const currentPlaylist = playlists.find(p => p.id === activePlaylistId);
     if (currentPlaylist) {
-      setChannels(currentPlaylist.channels);
-      if (currentPlaylist.channels.length > 0) {
-        const alreadySelected = currentPlaylist.channels.find(
-          c => c.id === selectedChannel?.id || c.url === selectedChannel?.url
-        );
-        if (!alreadySelected) {
-          const defaultChan = currentPlaylist.channels.find(
-            (c: Channel) =>
-              c.name.toLowerCase().includes("t sports") ||
-              c.name.toLowerCase().includes("t-sports")
+      const selectedChannelId = selectedChannel?.id;
+      const selectedChannelUrl = selectedChannel?.url;
+
+      setTimeout(() => {
+        setChannels(currentPlaylist.channels);
+        if (currentPlaylist.channels.length > 0) {
+          const alreadySelected = currentPlaylist.channels.find(
+            c => c.id === selectedChannelId || c.url === selectedChannelUrl
           );
-          setSelectedChannel(defaultChan || currentPlaylist.channels[0]);
+          if (!alreadySelected) {
+            const defaultChan = currentPlaylist.channels.find(
+              (c: Channel) =>
+                c.name.toLowerCase().includes("t sports") ||
+                c.name.toLowerCase().includes("t-sports")
+            );
+            setSelectedChannel(defaultChan || currentPlaylist.channels[0]);
+          }
+        } else {
+          setSelectedChannel(null);
         }
-      } else {
-        setSelectedChannel(null);
-      }
+      }, 0);
     }
-  }, [activePlaylistId, playlists]);
+  }, [activePlaylistId, playlists, selectedChannel?.id, selectedChannel?.url]);
 
   // M3U & JSON Parsing Helpers
   const parseM3U = (text: string): Channel[] => {
@@ -655,13 +679,27 @@ export default function IPTVPlayer() {
     return parsedChannels;
   };
 
+  interface RawChannelInput {
+    id?: string;
+    name?: string;
+    title?: string;
+    logo?: string;
+    logoUrl?: string;
+    image?: string;
+    group?: string;
+    category?: string;
+    url?: string;
+    streamUrl?: string;
+    link?: string;
+  }
+
   const parseJSON = (text: string): Channel[] => {
     const data = JSON.parse(text);
     const list = Array.isArray(data) ? data : data.channels || data.items || [];
     if (!Array.isArray(list)) {
       throw new Error("Invalid playlist JSON format. Expected an array of channels.");
     }
-    return list.map((ch: any, idx: number) => {
+    return list.map((ch: RawChannelInput, idx: number) => {
       const url = ch.url || ch.streamUrl || ch.link;
       if (!url) throw new Error(`Channel at index ${idx} is missing a streaming URL ('url')`);
       return {
@@ -708,8 +746,12 @@ export default function IPTVPlayer() {
         setActivePlaylistId(newPlaylist.id);
         setPlaylistTab("browse");
         if (fileInputRef.current) fileInputRef.current.value = "";
-      } catch (err: any) {
-        setImportError(err.message || "Failed to parse file. Ensure it is a valid M3U or JSON playlist.");
+      } catch (err) {
+        setImportError(
+          err instanceof Error
+            ? err.message
+            : "Failed to parse file. Ensure it is a valid M3U or JSON playlist."
+        );
       }
     };
     reader.onerror = () => {
@@ -770,8 +812,12 @@ export default function IPTVPlayer() {
       setImportUrl("");
       setPlaylistName("");
       setPlaylistTab("browse");
-    } catch (err: any) {
-      setImportError(err.message || "Failed to import from URL. Please check the link or CORS policy.");
+    } catch (err) {
+      setImportError(
+        err instanceof Error
+          ? err.message
+          : "Failed to import from URL. Please check the link or CORS policy."
+      );
     } finally {
       setIsImporting(false);
     }

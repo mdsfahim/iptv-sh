@@ -27,10 +27,10 @@ export async function GET(request: NextRequest) {
         "Access-Control-Allow-Origin": "*",
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Proxy error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to fetch from target URL" },
+      { error: error instanceof Error ? error.message : "Failed to fetch from target URL" },
       { status: 500 }
     );
   }

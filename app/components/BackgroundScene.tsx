@@ -9,7 +9,9 @@ export default function BackgroundScene() {
 
   // Detect mobile on mount (client-side only)
   useEffect(() => {
-    setIsMobile(window.innerWidth < 1024);
+    setTimeout(() => {
+      setIsMobile(window.innerWidth < 1024);
+    }, 0);
   }, []);
 
   useEffect(() => {
@@ -28,10 +30,14 @@ export default function BackgroundScene() {
     const camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 1000);
     camera.position.set(0, 2, 20);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: false,
+      powerPreference: "high-performance",
+      alpha: false,
+    });
     renderer.setClearColor(0x070414, 1);
     renderer.setSize(W, H);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(1);
     container.appendChild(renderer.domElement);
 
     // Mouse position tracking for camera parallax interaction
@@ -98,7 +104,7 @@ export default function BackgroundScene() {
     scene.add(gridMesh);
 
     // ── 2. Fluid Flow Field Particles (Starry data streams) ──
-    const particleCount = 1200;
+    const particleCount = 500;
     const pPositions = new Float32Array(particleCount * 3);
     const pColors = new Float32Array(particleCount * 3);
     const pSpeeds: number[] = [];
