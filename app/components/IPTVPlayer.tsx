@@ -584,16 +584,88 @@ export default function IPTVPlayer() {
     }
   }, [activePlaylistId]);
 
-  // 1. Fetch channel metadata from our API route once on mount
+  // --- IndexedDB Cache Helpers for channels.json ---
+  const openCacheDB = useCallback((): Promise<IDBDatabase> => {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open("iptv-cache", 1);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains("channels")) {
+          db.createObjectStore("channels");
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }, []);
+
+  const getCachedChannels = useCallback(async (): Promise<{ channels: Channel[]; hash: string } | null> => {
+    try {
+      const db = await openCacheDB();
+      return new Promise((resolve) => {
+        const tx = db.transaction("channels", "readonly");
+        const store = tx.objectStore("channels");
+        const req = store.get("cached-data");
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      });
+    } catch {
+      return null;
+    }
+  }, [openCacheDB]);
+
+  const setCachedChannels = useCallback(async (channels: Channel[], hash: string) => {
+    try {
+      const db = await openCacheDB();
+      const tx = db.transaction("channels", "readwrite");
+      const store = tx.objectStore("channels");
+      store.put({ channels, hash }, "cached-data");
+    } catch (e) {
+      console.warn("Failed to cache channels in IndexedDB:", e);
+    }
+  }, [openCacheDB]);
+
+  // 1. Fetch channel metadata with IndexedDB cache + SHA-256 hash validation
   useEffect(() => {
     async function loadChannels() {
       try {
         setLoading(true);
+
+        // Step 1: Check IndexedDB for cached channels
+        const cached = await getCachedChannels();
+
+        if (cached && cached.channels.length > 0) {
+          // Show cached data immediately for instant UI
+          setPlaylists(prev =>
+            prev.map(p => p.id === "default" ? { ...p, channels: cached.channels } : p)
+          );
+          setLoading(false);
+
+          // Step 2: Fetch only the hash to check for updates (~80 bytes)
+          try {
+            const hashResponse = await fetch("/api/iptv/channels/hash");
+            if (hashResponse.ok) {
+              const { hash: serverHash } = await hashResponse.json();
+              if (serverHash === cached.hash) {
+                // Hash matches — cache is fresh, no re-download needed
+                return;
+              }
+            }
+          } catch {
+            // Hash check failed — fall through to full fetch
+          }
+
+          // Step 3: Hash mismatch or check failed — re-download full data
+          setLoading(true);
+        }
+
+        // Step 4: Full fetch (first load or cache invalidated)
         const response = await fetch("/api/iptv/channels");
         if (!response.ok) {
           throw new Error(`Failed to load channels (Status ${response.status})`);
         }
         const data = await response.json();
+        const serverHash = response.headers.get("X-Channels-Hash") || "";
 
         setPlaylists(prev => {
           return prev.map(p => {
@@ -603,6 +675,11 @@ export default function IPTVPlayer() {
             return p;
           });
         });
+
+        // Store in IndexedDB for next load
+        if (serverHash) {
+          await setCachedChannels(data, serverHash);
+        }
       } catch (err: unknown) {
         const message =
           err instanceof Error
@@ -615,7 +692,7 @@ export default function IPTVPlayer() {
       }
     }
     loadChannels();
-  }, []);
+  }, [getCachedChannels, setCachedChannels]);
 
   // Sync active playlist channels to standard list representation
   useEffect(() => {

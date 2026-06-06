@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 
 // In-memory cache
 let cachedChannels: Array<{
@@ -10,9 +11,10 @@ let cachedChannels: Array<{
   group: string;
   url: string;
 }> = [];
+let cachedHash = "";
 let lastLoadedTime = 0;
 
-function getChannels() {
+export function getChannelsWithHash() {
   const now = Date.now();
 
   // Refresh cache every 60 seconds
@@ -24,7 +26,15 @@ function getChannels() {
       );
 
       if (fs.existsSync(channelsPath)) {
-        const raw = JSON.parse(fs.readFileSync(channelsPath, "utf8"));
+        const fileContent = fs.readFileSync(channelsPath, "utf8");
+
+        // Compute SHA-256 hash of raw file content
+        cachedHash = crypto
+          .createHash("sha256")
+          .update(fileContent)
+          .digest("hex");
+
+        const raw = JSON.parse(fileContent);
 
         // Add IDs if not present and deduplicate
         cachedChannels = raw.map(
@@ -46,16 +56,17 @@ function getChannels() {
     }
   }
 
-  return cachedChannels;
+  return { channels: cachedChannels, hash: cachedHash };
 }
 
 export async function GET() {
-  const channels = getChannels();
+  const { channels, hash } = getChannelsWithHash();
 
   return NextResponse.json(channels, {
     headers: {
       "Access-Control-Allow-Origin": "*",
-      "Cache-Control": "public, max-age=60, stale-while-revalidate=120",
+      "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+      "X-Channels-Hash": hash,
     },
   });
 }
