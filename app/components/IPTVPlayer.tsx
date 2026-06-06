@@ -44,6 +44,13 @@ interface Playlist {
   channels: Channel[];
 }
 
+const getPlayableUrl = (url: string) => {
+  if (url && url.startsWith("http://")) {
+    return `/api/iptv/proxy?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+};
+
 export default function IPTVPlayer() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -838,7 +845,8 @@ export default function IPTVPlayer() {
         });
         hlsRef.current = hls;
         hls.attachMedia(video);
-        hls.loadSource(chan.url);
+        const playableUrl = getPlayableUrl(chan.url);
+        hls.loadSource(playableUrl);
 
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           if (!video.paused) {
@@ -904,7 +912,8 @@ export default function IPTVPlayer() {
           }
         });
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        video.src = chan.url;
+        const playableUrl = getPlayableUrl(chan.url);
+        video.src = playableUrl;
 
         const onLoadedMetadata = () => {
           if (!video.paused) {
