@@ -1691,31 +1691,31 @@ export default function IPTVPlayer() {
           <div className="w-full glass-card p-4 sm:p-6 border border-white/5 rounded-2xl md:rounded-3xl bg-white/[0.01] flex flex-col h-[600px] sm:h-[700px]">
             {/* Playlist Header & Tab Bar */}
             <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-white/5 flex-wrap gap-2">
-              <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/5">
+              <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/5 w-full sm:w-auto">
                 <button
                   onClick={() => setPlaylistTab("browse")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all ${playlistTab === "browse"
+                  className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex-1 sm:flex-initial ${playlistTab === "browse"
                       ? "bg-primary text-white shadow-lg shadow-primary/20"
                       : "text-gray-400 hover:text-white"
                     }`}
                 >
                   <Tv size={14} />
-                  <span>Browse Channels</span>
+                  <span className="whitespace-nowrap">Browse Channels</span>
                 </button>
                 <button
                   onClick={() => setPlaylistTab("manage")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all ${playlistTab === "manage"
+                  className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex-1 sm:flex-initial ${playlistTab === "manage"
                       ? "bg-primary text-white shadow-lg shadow-primary/20"
                       : "text-gray-400 hover:text-white"
                     }`}
                 >
                   <Upload size={14} />
-                  <span>Playlists Manager</span>
+                  <span className="whitespace-nowrap">Playlists Manager</span>
                 </button>
               </div>
 
               {/* Display active playlist name & watcher count */}
-              <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/5">
+              <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/5 w-full sm:w-auto justify-between sm:justify-start">
                 {viewerCount !== null && (
                   <>
                     <div className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 rounded-lg text-[10px] sm:text-xs text-gray-400 select-none">
@@ -1724,7 +1724,7 @@ export default function IPTVPlayer() {
                         {viewerCount} {viewerCount === 1 ? "Watcher" : "Watchers"}
                       </span>
                     </div>
-                    <div className="h-4 w-[1px] bg-white/10 mx-1 flex-shrink-0" />
+                    <div className="hidden sm:block h-4 w-[1px] bg-white/10 mx-1 flex-shrink-0" />
                   </>
                 )}
 
