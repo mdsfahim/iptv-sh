@@ -16,8 +16,8 @@ export default function WorldCupPopup({ showPopup }: WorldCupPopupProps) {
   useEffect(() => {
     if (!showPopup) return;
 
-    // Check if user has already dismissed the popup
-    const isDismissed = localStorage.getItem("dismissed_world_cup_popup_2026");
+    // Check if user has already dismissed the popup in this session
+    const isDismissed = sessionStorage.getItem("dismissed_world_cup_popup_2026");
     if (isDismissed !== "true") {
       // Delay showing the popup slightly for a premium feel
       const timer = setTimeout(() => {
@@ -29,7 +29,7 @@ export default function WorldCupPopup({ showPopup }: WorldCupPopupProps) {
 
   const handleClose = () => {
     setIsOpen(false);
-    localStorage.setItem("dismissed_world_cup_popup_2026", "true");
+    sessionStorage.setItem("dismissed_world_cup_popup_2026", "true");
   };
 
   return (
