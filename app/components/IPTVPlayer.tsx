@@ -1248,7 +1248,7 @@ export default function IPTVPlayer() {
           </div>
 
           {/* 3. Channels List Skeleton Card */}
-          <div className="w-full glass-card p-4 sm:p-6 border border-white/5 rounded-2xl md:rounded-3xl bg-white/[0.01] flex flex-col h-[550px] sm:h-[650px] gap-4">
+          <div className="w-full glass-card p-4 sm:p-6 border border-white/5 rounded-2xl md:rounded-3xl bg-white/[0.01] flex flex-col h-[600px] sm:h-[700px] gap-4">
             <div className="space-y-3 pb-3 border-b border-white/5">
               <div className="h-10 bg-white/5 rounded-xl sm:rounded-2xl w-full" />
               <div className="flex gap-2">

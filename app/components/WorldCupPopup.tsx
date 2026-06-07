@@ -1,8 +1,7 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
-
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Play } from "lucide-react";
 
@@ -71,10 +70,13 @@ export default function WorldCupPopup({ showPopup }: WorldCupPopupProps) {
             <div className="flex flex-col items-center text-center">
               {/* Premium Badge for FIFA Logo */}
               <div className="relative mb-4 sm:mb-5 flex h-20 w-16 sm:h-24 sm:w-20 items-center justify-center rounded-2xl bg-white p-2 sm:p-2.5 shadow-[0_8px_30px_rgba(255,255,255,0.12)] border border-yellow-400/50">
-                <img
+                <Image
                   src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png"
                   alt="FIFA World Cup 2026 Logo"
-                  className="h-full w-auto object-contain"
+                  fill
+                  sizes="(max-width: 640px) 64px, 80px"
+                  className="object-contain p-2 sm:p-2.5"
+                  priority
                 />
               </div>
 
@@ -119,11 +121,13 @@ export default function WorldCupPopup({ showPopup }: WorldCupPopupProps) {
             <div className="mt-4 sm:mt-6 grid grid-cols-3 gap-2 sm:gap-3">
               {/* BTV */}
               <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/[0.02] p-2 sm:p-3 text-center transition-all duration-300 hover:bg-white/[0.06] hover:border-yellow-500/20 hover:-translate-y-1 group">
-                <div className="flex h-11 sm:h-14 w-full items-center justify-center rounded-xl bg-white p-1.5 sm:p-2 shadow-md border border-white/10 group-hover:scale-105 transition-transform duration-300">
-                  <img
+                <div className="relative flex h-11 sm:h-14 w-full items-center justify-center rounded-xl bg-white p-1.5 sm:p-2 shadow-md border border-white/10 group-hover:scale-105 transition-transform duration-300">
+                  <Image
                     src="https://tstatic.akash-go.com/cms-ui/images/custom-content/1778082545894.png"
                     alt="BTV"
-                    className="h-full object-contain filter brightness-100"
+                    fill
+                    sizes="(max-width: 640px) 80px, 120px"
+                    className="object-contain p-1.5 sm:p-2 filter brightness-100"
                   />
                 </div>
                 <span className="mt-1.5 sm:mt-2.5 text-[9px] sm:text-[10px] font-extrabold tracking-wider text-zinc-400 group-hover:text-yellow-400 transition-colors">BTV</span>
@@ -131,11 +135,13 @@ export default function WorldCupPopup({ showPopup }: WorldCupPopupProps) {
 
               {/* T Sports */}
               <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/[0.02] p-2 sm:p-3 text-center transition-all duration-300 hover:bg-white/[0.06] hover:border-yellow-500/20 hover:-translate-y-1 group">
-                <div className="flex h-11 sm:h-14 w-full items-center justify-center rounded-xl bg-white p-1.5 sm:p-2 shadow-md border border-white/10 group-hover:scale-105 transition-transform duration-300">
-                  <img
+                <div className="relative flex h-11 sm:h-14 w-full items-center justify-center rounded-xl bg-white p-1.5 sm:p-2 shadow-md border border-white/10 group-hover:scale-105 transition-transform duration-300">
+                  <Image
                     src="https://s3.aynaott.com/storage/dbc585f70a60b9855b6e13a8ce4cb6f4"
                     alt="T Sports"
-                    className="h-full object-contain"
+                    fill
+                    sizes="(max-width: 640px) 80px, 120px"
+                    className="object-contain p-1.5 sm:p-2"
                   />
                 </div>
                 <span className="mt-1.5 sm:mt-2.5 text-[9px] sm:text-[10px] font-extrabold tracking-wider text-zinc-400 group-hover:text-yellow-400 transition-colors">T Sports</span>
@@ -143,11 +149,13 @@ export default function WorldCupPopup({ showPopup }: WorldCupPopupProps) {
 
               {/* Somoy TV */}
               <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/[0.02] p-2 sm:p-3 text-center transition-all duration-300 hover:bg-white/[0.06] hover:border-yellow-500/20 hover:-translate-y-1 group">
-                <div className="flex h-11 sm:h-14 w-full items-center justify-center rounded-xl bg-white p-1.5 sm:p-2 shadow-md border border-white/10 group-hover:scale-105 transition-transform duration-300">
-                  <img
+                <div className="relative flex h-11 sm:h-14 w-full items-center justify-center rounded-xl bg-white p-1.5 sm:p-2 shadow-md border border-white/10 group-hover:scale-105 transition-transform duration-300">
+                  <Image
                     src="https://i.postimg.cc/Qxn4JFNV/20250529-071147.png"
                     alt="Somoy TV"
-                    className="h-full object-contain"
+                    fill
+                    sizes="(max-width: 640px) 80px, 120px"
+                    className="object-contain p-1.5 sm:p-2"
                   />
                 </div>
                 <span className="mt-1.5 sm:mt-2.5 text-[9px] sm:text-[10px] font-extrabold tracking-wider text-zinc-400 group-hover:text-yellow-400 transition-colors">Somoy TV</span>
