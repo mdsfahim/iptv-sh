@@ -1706,8 +1706,71 @@ export default function IPTVPlayer() {
             </div>
           </div>
 
-          {/* 3. Channel List Card */}
-          <div className="w-full glass-card p-4 sm:p-6 border border-white/5 rounded-2xl md:rounded-3xl bg-white/[0.01] flex flex-col h-[600px] sm:h-[700px]">
+          {/* 3. Main Content Area: Sidebar + Channel List */}
+          <div className="flex flex-col lg:flex-row gap-6 w-full">
+            
+            {/* Sidebar: Your Playlists */}
+            <div className="w-full lg:w-1/3 xl:w-1/4 glass-card p-4 sm:p-5 border border-white/5 rounded-2xl md:rounded-3xl bg-white/[0.01] flex flex-col max-h-[280px] lg:max-h-none lg:h-[600px] xl:h-[700px]">
+              <h4 className="font-bold text-sm sm:text-base text-white mb-3">Your Playlists</h4>
+              <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2.5">
+                {playlists.map((pl) => {
+                  const isActive = pl.id === activePlaylistId;
+                  return (
+                    <div
+                      key={pl.id}
+                      onClick={() => {
+                        setActivePlaylistId(pl.id);
+                        setPlaylistTab("browse");
+                      }}
+                      className={`flex items-center justify-between p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all cursor-pointer group/item ${isActive
+                          ? "bg-primary/10 border-primary text-primary shadow-lg shadow-primary/5"
+                          : "bg-white/[0.02] border-white/5 text-white hover:bg-white/[0.05] hover:border-white/10"
+                        }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`p-2 sm:p-2.5 rounded-lg sm:rounded-xl border flex-shrink-0 ${isActive ? "bg-primary/20 border-primary/20" : "bg-white/5 border-white/10"
+                          }`}>
+                          {pl.type === "default" ? (
+                            <Tv size={14} className="sm:w-4 sm:h-4" />
+                          ) : pl.type === "url" ? (
+                            <Link size={14} className="sm:w-4 sm:h-4" />
+                          ) : (
+                            <FileText size={14} className="sm:w-4 sm:h-4" />
+                          )}
+                        </div>
+
+                        <div className="min-w-0">
+                          <h5 className="font-bold text-xs sm:text-sm truncate pr-2">{pl.name}</h5>
+                          <p className="text-[9px] sm:text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">
+                            {pl.channels.length} Channels
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        {isActive && (
+                          <span className="p-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            <Check size={10} className="sm:w-3 sm:h-3 stroke-[3]" />
+                          </span>
+                        )}
+                        {pl.id !== "default" && (
+                          <button
+                            onClick={(e) => handleDeletePlaylist(pl.id, e)}
+                            className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all opacity-100 lg:opacity-0 lg:group-hover/item:opacity-100 focus:opacity-100 cursor-pointer"
+                            title="Delete Playlist"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Channel List Card */}
+            <div className="w-full lg:w-2/3 xl:w-3/4 glass-card p-4 sm:p-6 border border-white/5 rounded-2xl md:rounded-3xl bg-white/[0.01] flex flex-col h-[600px] sm:h-[700px]">
             {/* Playlist Header & Tab Bar */}
             <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-white/5 flex-wrap gap-2">
               <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/5 w-full sm:w-auto">
@@ -1972,67 +2035,9 @@ export default function IPTVPlayer() {
                   </div>
                 )}
 
-                {/* Saved Playlists */}
-                <div className="space-y-3">
-                  <h4 className="font-bold text-sm sm:text-base text-gray-300">Your Playlists</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {playlists.map((pl) => {
-                      const isActive = pl.id === activePlaylistId;
-                      return (
-                        <div
-                          key={pl.id}
-                          onClick={() => {
-                            setActivePlaylistId(pl.id);
-                            setPlaylistTab("browse");
-                          }}
-                          className={`flex items-center justify-between p-4 sm:p-5 rounded-2xl border text-left transition-all cursor-pointer group/item ${isActive
-                              ? "bg-primary/10 border-primary text-primary shadow-lg shadow-primary/5"
-                              : "bg-white/[0.02] border-white/5 text-white hover:bg-white/[0.05] hover:border-white/10"
-                            }`}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className={`p-2.5 rounded-xl border flex-shrink-0 ${isActive ? "bg-primary/20 border-primary/20" : "bg-white/5 border-white/10"
-                              }`}>
-                              {pl.type === "default" ? (
-                                <Tv size={16} />
-                              ) : pl.type === "url" ? (
-                                <Link size={16} />
-                              ) : (
-                                <FileText size={16} />
-                              )}
-                            </div>
-
-                            <div className="min-w-0">
-                              <h5 className="font-bold text-xs sm:text-sm truncate pr-2">{pl.name}</h5>
-                              <p className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">
-                                {pl.channels.length} Channels • {pl.type === "default" ? "Built-in" : pl.type === "url" ? "URL" : "Uploaded File"}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            {isActive && (
-                              <span className="p-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                                <Check size={12} className="stroke-[3]" />
-                              </span>
-                            )}
-                            {pl.id !== "default" && (
-                              <button
-                                onClick={(e) => handleDeletePlaylist(pl.id, e)}
-                                className="p-2 rounded-xl text-zinc-300 hover:text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all opacity-0 group-hover/item:opacity-100 focus:opacity-100 cursor-pointer"
-                                title="Delete Playlist"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
               </div>
             )}
+          </div>
           </div>
 
           {/* 4. Footer with Developer Info */}
