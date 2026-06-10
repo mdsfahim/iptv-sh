@@ -476,10 +476,7 @@ export default function IPTVPlayer() {
     typeof document !== "undefined" && document.pictureInPictureEnabled;
 
   const handlePlayerClick = (e: React.MouseEvent) => {
-    if (
-      (e.target as HTMLElement).closest(".player-controls") ||
-      (e.target as HTMLElement).closest(".desktop-seek-btn")
-    ) {
+    if ((e.target as HTMLElement).closest(".player-controls")) {
       return;
     }
 
@@ -508,10 +505,7 @@ export default function IPTVPlayer() {
   };
 
   const handlePlayerDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (
-      (e.target as HTMLElement).closest(".player-controls") ||
-      (e.target as HTMLElement).closest(".desktop-seek-btn")
-    ) {
+    if ((e.target as HTMLElement).closest(".player-controls")) {
       return;
     }
 
@@ -1449,32 +1443,6 @@ export default function IPTVPlayer() {
                 )}
               </AnimatePresence>
 
-              {/* Desktop Hover Seek Buttons */}
-              <div className="absolute inset-y-0 left-0 w-16 flex items-center justify-start pl-4 pointer-events-none z-20">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSeek(-10);
-                  }}
-                  className="desktop-seek-btn pointer-events-auto h-12 w-12 rounded-full bg-black/50 hover:bg-primary/80 border border-white/10 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-x-4 group-hover:translate-x-0 cursor-pointer hidden md:flex"
-                  title="Rewind 10s"
-                >
-                  <ChevronsLeft size={20} />
-                </button>
-              </div>
-
-              <div className="absolute inset-y-0 right-0 w-16 flex items-center justify-end pr-4 pointer-events-none z-20">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSeek(10);
-                  }}
-                  className="desktop-seek-btn pointer-events-auto h-12 w-12 rounded-full bg-black/50 hover:bg-primary/80 border border-white/10 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0 cursor-pointer hidden md:flex"
-                  title="Forward 10s"
-                >
-                  <ChevronsRight size={20} />
-                </button>
-              </div>
 
               {/* Loader Overlay */}
               {playerStatus === "loading" && (
