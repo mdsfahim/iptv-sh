@@ -33,7 +33,7 @@ import {
   List,
   X
 } from "lucide-react";
-import { FaGithub, FaTelegram, FaFacebook, FaYoutube } from "react-icons/fa6";
+import { FaGithub, FaTelegram } from "react-icons/fa6";
 
 interface Channel {
   id: string;
@@ -1176,32 +1176,13 @@ export default function IPTVPlayer() {
         // Mirrors the working implementation in test/1.html exactly
         (async () => {
           try {
-            // Dynamically load Shaka (browser-only, needs window)
-            // @ts-expect-error - shaka is loaded via CDN script tag on window
-            if (typeof window.shaka === "undefined") {
-              await new Promise<void>((resolve, reject) => {
-                // Check if already loading
-                if (document.querySelector('script[data-shaka]')) {
-                  const check = setInterval(() => {
-                    // @ts-expect-error - shaka global
-                    if (typeof window.shaka !== "undefined") { clearInterval(check); resolve(); }
-                  }, 50);
-                  return;
-                }
-                const script = document.createElement("script");
-                script.src = "https://unpkg.com/shaka-player@5.0.0/dist/shaka-player.compiled.js";
-                script.setAttribute("data-shaka", "1");
-                script.onload = () => resolve();
-                script.onerror = () => reject(new Error("Failed to load Shaka Player"));
-                document.head.appendChild(script);
-              });
-            }
+            // Dynamically load Shaka Player from node module (browser-only, needs window)
+            const shakaModule = await import("shaka-player");
+            const shaka = shakaModule.default || shakaModule;
 
-            // Guard: bail if user switched channels while script was loading
+            // Guard: bail if user switched channels while module was loading
             if (loadedUrlRef.current !== chan.url) return;
 
-            // @ts-expect-error - shaka global
-            const shaka = window.shaka;
             shaka.polyfill.installAll();
 
             if (!shaka.Player.isBrowserSupported()) {
@@ -1214,7 +1195,7 @@ export default function IPTVPlayer() {
             dashRef.current = player;
             await player.attach(video);
 
-            // Live stream tuning — mirrors test/1.html config
+            // Live stream tuning — mirrors test/1.html config (excluding removed gap configurations in Shaka v4+)
             player.configure({
               manifest: {
                 defaultPresentationDelay: 8,
@@ -1224,8 +1205,6 @@ export default function IPTVPlayer() {
                 bufferingGoal: 10,
                 rebufferingGoal: 0.8,
                 bufferBehind: 12,
-                jumpLargeGaps: true,
-                smallGapLimit: 1.5,
                 stallEnabled: true,
                 stallThreshold: 1,
                 stallSkip: 0.15,
@@ -1254,14 +1233,17 @@ export default function IPTVPlayer() {
               });
             }
 
-            player.addEventListener("error", (event: { detail?: { code?: number } }) => {
-              const code = event?.detail?.code ?? "";
-              console.error("[SHAKA] DASH error:", event?.detail);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            player.addEventListener("error", (event: any) => {
+              const detail = event?.detail;
+              console.error("[SHAKA] DASH error detail:", JSON.stringify(detail));
+              const code = detail?.code ?? "";
               setPlayerStatus("error");
               setError("DASH stream error" + (code ? " • Code: " + code : ""));
             });
 
-            player.addEventListener("buffering", (event: { buffering: boolean }) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            player.addEventListener("buffering", (event: any) => {
               if (!event.buffering) {
                 setPlayerStatus("playing");
                 setIsPaused(false);
@@ -1272,16 +1254,24 @@ export default function IPTVPlayer() {
 
             // Guard again after async load
             if (loadedUrlRef.current !== chan.url) {
-              await player.destroy();
+              await player.destroy().catch(() => {});
               return;
             }
 
             attemptPlay();
           } catch (err: unknown) {
             if (loadedUrlRef.current !== chan.url) return; // stale, ignore
-            const msg = err instanceof Error ? err.message : "DASH / MPD load failed";
-            console.error("[SHAKA] Load error:", err);
-            setError(msg);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const errObj = err as any;
+            let errMsg = "DASH / MPD load failed";
+            if (errObj) {
+              if (errObj.code) errMsg += ` (Code: ${errObj.code})`;
+              if (errObj.category) errMsg += ` (Category: ${errObj.category})`;
+              if (errObj.severity) errMsg += ` (Severity: ${errObj.severity})`;
+              if (errObj.message) errMsg += ` - ${errObj.message}`;
+            }
+            console.error("[SHAKA] Load error detail:", JSON.stringify(errObj), errMsg);
+            setError(errMsg);
             setPlayerStatus("error");
           }
         })();
