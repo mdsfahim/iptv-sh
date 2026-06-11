@@ -19,7 +19,7 @@ A modern, high-performance, and premium web-based IPTV player built with **Next.
 ## ✨ Features
 
 - 📺 **Cinematic Video Player**: Large, center-aligned, aspect-ratio locked media container utilizing HLS.js and native iOS Safari player engines. Supports Picture-in-Picture (PiP), custom volume controls, double-tap seek, and auto-fallback muted play.
-- 🚀 **Multi-Playlist Concurrent Loading**: Automatically initiates requests for all default playlists (**Sports**, **Universal**, and **Bangla**) immediately when loading the home page. Displays channel counts instantly and sets the **Sports** playlist as selected by default.
+- 🚀 **Multi-Playlist Concurrent Loading**: Automatically initiates requests for all default playlists (**Sports**, **Universal**, **Bangla**, and **FIFA**) immediately when loading the home page. Displays channel counts instantly and sets the **Sports** playlist as selected by default.
 - 💾 **SHA-256 Hash-Based IndexedDB Cache**: Caches each default playlist in the browser using IndexedDB. On page load, it queries a lightweight `/api/iptv/channels/hash?type=...` endpoint. If unchanged, channels load instantly from cache, saving bandwidth and eliminating player lag.
 - 📂 **High-Speed BDIX FTP Portal**: An elegant `/ftp` directory showing local BDIX movie and media servers, complete with real-time online status indicators, host configurations, speed diagnostics, and instant redirection link components.
 - 👥 **Real-Time Watcher Telemetry**: Integrated directly into the channel list header, using a non-blocking session heartbeat endpoint to monitor active viewers concurrently.
@@ -63,6 +63,16 @@ If you want to use the curated, lightweight IPTV channel databases in another pr
 * **M3U Playlist Link**
   ```text
   https://raw.githubusercontent.com/SHAJON-404/iptv/refs/heads/main/app/data/bangla.m3u
+  ```
+
+### ⚽ FIFA Playlist (7 Channels)
+* **JSON Database Link**
+  ```text
+  https://raw.githubusercontent.com/SHAJON-404/iptv/refs/heads/main/app/data/fifa.json
+  ```
+* **M3U Playlist Link**
+  ```text
+  https://raw.githubusercontent.com/SHAJON-404/iptv/refs/heads/main/app/data/fifa.m3u
   ```
 
 
