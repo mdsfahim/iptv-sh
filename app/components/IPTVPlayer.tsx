@@ -168,6 +168,7 @@ export default function IPTVPlayer() {
   const isMutedRef = useRef(isMuted);
   const volumeRef = useRef(volume);
   const loadedUrlRef = useRef<string | null>(null);
+  const playTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [viewerCount, setViewerCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -1478,6 +1479,48 @@ export default function IPTVPlayer() {
     },
     [initializeStream]
   );
+
+  // Automatic channel switch if playback doesn't start in 10 seconds
+  useEffect(() => {
+    if (!selectedChannel || playerStatus === "playing" || playerStatus === "idle") {
+      if (playTimeoutRef.current) {
+        clearTimeout(playTimeoutRef.current);
+        playTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    if (playTimeoutRef.current) {
+      clearTimeout(playTimeoutRef.current);
+    }
+
+    playTimeoutRef.current = setTimeout(() => {
+      console.log("Playback failed to start within 10 seconds, switching to next channel...");
+      
+      setChannels((currentChannels) => {
+        if (currentChannels.length <= 1) return currentChannels;
+        
+        const currentIndex = currentChannels.findIndex(
+          (c) => c.id === selectedChannel.id || c.url === selectedChannel.url
+        );
+        if (currentIndex !== -1) {
+          const nextIndex = (currentIndex + 1) % currentChannels.length;
+          const nextChan = currentChannels[nextIndex];
+          setTimeout(() => {
+            handleChannelSelect(nextChan);
+          }, 0);
+        }
+        return currentChannels;
+      });
+    }, 10000);
+
+    return () => {
+      if (playTimeoutRef.current) {
+        clearTimeout(playTimeoutRef.current);
+        playTimeoutRef.current = null;
+      }
+    };
+  }, [selectedChannel, playerStatus, retryKey, handleChannelSelect]);
 
   const categories = useMemo(() => [
     "All",
