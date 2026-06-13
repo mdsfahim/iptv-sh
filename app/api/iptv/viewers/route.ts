@@ -39,11 +39,22 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { sessionId } = body;
 
-    if (!sessionId || typeof sessionId !== "string") {
+    if (!sessionId || typeof sessionId !== "string" || sessionId.length > 50) {
       return NextResponse.json(
         { error: "Invalid session ID" },
         { status: 400 }
       );
+    }
+
+    // Safeguard to prevent memory exhaustion by limiting map size to 10,000 active sessions
+    if (activeSessions.size > 10000) {
+      cleanExpiredSessions();
+      if (activeSessions.size > 10000 && !activeSessions.has(sessionId)) {
+        return NextResponse.json(
+          { error: "Viewer session limit reached" },
+          { status: 503 }
+        );
+      }
     }
 
     // Register or update heartbeat timestamp

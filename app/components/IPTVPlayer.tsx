@@ -64,10 +64,58 @@ const getPlayableUrl = (url: string) => {
 // Cache expires after 15 minutes — forces a full re-fetch
 const CACHE_MAX_AGE_MS = 15 * 60 * 1000;
 
+function getFriendlyErrorMessage(rawError: string): { title: string; desc: string } {
+  const lower = rawError.toLowerCase();
+
+  if (lower.includes("404") || lower.includes("not found")) {
+    return {
+      title: "Channel Offline or Not Found (404)",
+      desc: "The streaming source is offline or dead. Please contact the developer to update this channel's link.",
+    };
+  }
+  if (lower.includes("403") || lower.includes("forbidden") || lower.includes("not authorized")) {
+    return {
+      title: "Access Forbidden (403)",
+      desc: "This stream is geo-blocked, restricted, or requires authorization. Contact the developer to check for alternative sources.",
+    };
+  }
+  if (lower.includes("6020") || lower.includes("drm") || lower.includes("eme")) {
+    return {
+      title: "DRM / Decryption Key Error",
+      desc: "This is an encrypted channel that requires DRM decryption keys. If accessing over a local IP, browsers block EME. Try HTTPS or localhost, or contact the developer.",
+    };
+  }
+  if (lower.includes("timeout") || lower.includes("timed out")) {
+    return {
+      title: "Connection Timed Out",
+      desc: "The streaming server is taking too long to respond. It might be overloaded. Try reconnecting or report this to the developer.",
+    };
+  }
+  if (lower.includes("cors") || lower.includes("cross-origin")) {
+    return {
+      title: "CORS Access Blocked",
+      desc: "The broadcaster has blocked cross-origin web player access. Please report this issue to the developer.",
+    };
+  }
+  if (lower.includes("format") || lower.includes("unsupported") || lower.includes("manifest")) {
+    return {
+      title: "Unsupported Stream Format",
+      desc: "The browser or player engine could not parse this stream format. Please try another channel or contact the developer.",
+    };
+  }
+
+  return {
+    title: "Stream Currently Unavailable",
+    desc: "This live TV link might be offline, or blocked by the original broadcaster. Contact the developer if this issue persists.",
+  };
+}
+
 export default function IPTVPlayer() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [playerError, setPlayerError] = useState<string | null>(null);
+  const [isBuffering, setIsBuffering] = useState(false);
 
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -307,10 +355,20 @@ export default function IPTVPlayer() {
       setIsMuted(video.muted);
       setVolume(video.volume);
     };
+    const handleWaiting = () => setIsBuffering(true);
+    const handlePlayingEvent = () => setIsBuffering(false);
+    const handleSeeking = () => setIsBuffering(true);
+    const handleSeeked = () => setIsBuffering(false);
+    const handleCanPlay = () => setIsBuffering(false);
 
     video.addEventListener("play", handlePlay);
     video.addEventListener("pause", handlePause);
     video.addEventListener("volumechange", handleVolumeChange);
+    video.addEventListener("waiting", handleWaiting);
+    video.addEventListener("playing", handlePlayingEvent);
+    video.addEventListener("seeking", handleSeeking);
+    video.addEventListener("seeked", handleSeeked);
+    video.addEventListener("canplay", handleCanPlay);
 
     setIsPaused(video.paused);
     setIsMuted(video.muted);
@@ -320,6 +378,11 @@ export default function IPTVPlayer() {
       video.removeEventListener("play", handlePlay);
       video.removeEventListener("pause", handlePause);
       video.removeEventListener("volumechange", handleVolumeChange);
+      video.removeEventListener("waiting", handleWaiting);
+      video.removeEventListener("playing", handlePlayingEvent);
+      video.removeEventListener("seeking", handleSeeking);
+      video.removeEventListener("seeked", handleSeeked);
+      video.removeEventListener("canplay", handleCanPlay);
     };
   }, [selectedChannel, retryKey]);
 
@@ -1096,6 +1159,8 @@ export default function IPTVPlayer() {
       if (!video) return;
 
       setPlayerStatus("loading");
+      setPlayerError(null);
+      setIsBuffering(false);
       loadedUrlRef.current = chan.url;
 
       // Fully reset video element to clear stale state (fixes Firefox)
@@ -1186,7 +1251,7 @@ export default function IPTVPlayer() {
             shaka.polyfill.installAll();
 
             if (!shaka.Player.isBrowserSupported()) {
-              setError("Your browser does not support DASH playback.");
+              setPlayerError("Your browser does not support DASH playback.");
               setPlayerStatus("error");
               return;
             }
@@ -1244,7 +1309,7 @@ export default function IPTVPlayer() {
                 errorMsg += " • Missing browser DRM/EME support. If accessing over a local network IP (e.g. http://192.168.x.x), EME is blocked by Chrome/browsers. Please use http://localhost:3000 or configure HTTPS.";
               }
               setPlayerStatus("error");
-              setError(errorMsg);
+              setPlayerError(errorMsg);
             });
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1279,7 +1344,7 @@ export default function IPTVPlayer() {
               }
             }
             console.error("[SHAKA] Load error detail:", JSON.stringify(errObj), errMsg);
-            setError(errMsg);
+            setPlayerError(errMsg);
             setPlayerStatus("error");
           }
         })();
@@ -1321,6 +1386,7 @@ export default function IPTVPlayer() {
                 break;
               default:
                 console.error("Fatal unrecoverable HLS error:", data);
+                setPlayerError(`Fatal HLS stream error (${data.type})`);
                 setPlayerStatus("error");
                 break;
             }
@@ -1341,6 +1407,7 @@ export default function IPTVPlayer() {
 
         const onError = (e: Event) => {
           console.error("Native video player error:", e);
+          setPlayerError("Native video player playback error");
           setPlayerStatus("error");
         };
 
@@ -1349,7 +1416,7 @@ export default function IPTVPlayer() {
         });
         video.addEventListener("error", onError, { once: true });
       } else {
-        setError("Your browser does not support stream playback.");
+        setPlayerError("Your browser does not support stream playback.");
         setPlayerStatus("error");
       }
 
@@ -1700,35 +1767,53 @@ export default function IPTVPlayer() {
 
 
               {/* Loader Overlay */}
-              {playerStatus === "loading" && (
+              {(playerStatus === "loading" || (isBuffering && !isPaused)) && (
                 <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-4 z-10">
                   <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin" />
                   <span className="text-sm font-semibold tracking-wider text-primary animate-pulse">
-                    FETCHING IPTV LIVE STREAM...
+                    {playerStatus === "loading" ? "FETCHING IPTV LIVE STREAM..." : "BUFFERING LIVE STREAM..."}
                   </span>
                 </div>
               )}
 
               {/* Error/Offline Overlay */}
-              {playerStatus === "error" && (
-                <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center gap-4 z-10 px-6 text-center">
-                  <ShieldAlert className="text-rose-500" size={40} />
-                  <span className="text-base font-bold text-white">
-                    Stream Currently Unavailable
-                  </span>
-                  <span className="text-xs text-zinc-400 max-w-sm">
-                    This live TV link might be offline, or blocked by the
-                    original broadcaster.
-                  </span>
-                  <button
-                    onClick={handleReload}
-                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-xs font-bold rounded-xl border border-white/10 transition-colors"
-                  >
-                    <RefreshCw size={12} />
-                    <span>Try Reconnecting</span>
-                  </button>
-                </div>
-              )}
+              {playerStatus === "error" && (() => {
+                const { title, desc } = getFriendlyErrorMessage(playerError || "");
+                return (
+                  <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center gap-3.5 z-10 px-6 text-center font-sans">
+                    <ShieldAlert className="text-rose-500 animate-pulse" size={40} />
+                    <span className="text-base font-bold text-white tracking-tight">
+                      {title}
+                    </span>
+                    {playerError && (
+                      <span className="text-[10px] sm:text-xs text-rose-400 font-mono bg-rose-500/10 border border-rose-500/10 px-3 py-1.5 rounded-xl max-w-md break-words select-all">
+                        {playerError}
+                      </span>
+                    )}
+                    <span className="text-xs text-zinc-400 max-w-md leading-relaxed font-medium">
+                      {desc}
+                    </span>
+                    <div className="flex gap-2.5 mt-2 flex-wrap justify-center">
+                      <button
+                        onClick={handleReload}
+                        className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-xs font-bold rounded-xl border border-white/10 transition-colors cursor-pointer text-white"
+                      >
+                        <RefreshCw size={12} />
+                        <span>Try Reconnecting</span>
+                      </button>
+                      <a
+                        href="https://t.me/SHAJON"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-xs font-bold rounded-xl transition-all shadow-md shadow-primary/20 cursor-pointer text-white no-underline"
+                      >
+                        <FaTelegram size={12} />
+                        <span>Contact Developer</span>
+                      </a>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Idle Overlay */}
               {playerStatus === "idle" && (

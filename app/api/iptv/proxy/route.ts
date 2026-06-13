@@ -1,5 +1,72 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetch as undiciFetch, Agent } from "undici";
+import dns from "dns";
+
+function isPrivateOrLocalIp(ip: string): boolean {
+  // IPv4 Loopback: 127.0.0.0/8
+  if (/^127\./.test(ip)) return true;
+  
+  // RFC 1918 Private Ranges:
+  // 10.0.0.0/8
+  if (/^10\./.test(ip)) return true;
+  // 172.16.0.0/12
+  if (/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip)) return true;
+  // 192.168.0.0/16
+  if (/^192\.168\./.test(ip)) return true;
+  
+  // Link-Local: 169.254.0.0/16
+  if (/^169\.254\./.test(ip)) return true;
+  
+  // Local/unspecified: 0.0.0.0
+  if (ip === "0.0.0.0") return true;
+
+  // IPv6 loopback, unspecified, link-local, unique local
+  const ipv6Lower = ip.toLowerCase();
+  if (ipv6Lower === "::1" || ipv6Lower === "::") return true;
+  if (ipv6Lower.startsWith("fe80:")) return true;
+  if (/^[fF][cCdD]/.test(ipv6Lower)) return true;
+
+  return false;
+}
+
+async function isValidTargetUrl(urlStr: string): Promise<boolean> {
+  try {
+    const parsed = new URL(urlStr);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return false;
+    }
+
+    const hostname = parsed.hostname;
+    const lowerHost = hostname.toLowerCase();
+    
+    // Block localhost names
+    if (lowerHost === "localhost" || lowerHost === "loopback" || lowerHost === "localhost.localdomain") {
+      return false;
+    }
+    
+    // Block direct local IP hostnames
+    if (isPrivateOrLocalIp(hostname)) {
+      return false;
+    }
+
+    // Resolve DNS to verify resolved IP address
+    try {
+      const addresses = await dns.promises.lookup(hostname, { all: true });
+      for (const addr of addresses) {
+        if (isPrivateOrLocalIp(addr.address)) {
+          return false;
+        }
+      }
+    } catch {
+      // If resolution fails, prevent request to be safe
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // Create a custom Undici Agent to handle legacy IPTV servers
 // that use older TLS versions or legacy cipher suites.
@@ -56,13 +123,50 @@ export async function GET(request: NextRequest) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
 
-    const response = await undiciFetch(targetUrl, {
-      headers: upstreamHeaders,
-      signal: controller.signal,
-      redirect: "follow",
-      dispatcher: sslAgent,
-    });
+    let currentUrl = targetUrl;
+    let response: Awaited<ReturnType<typeof undiciFetch>> | null = null;
+    let redirectCount = 0;
+    const MAX_REDIRECTS = 5;
+
+    while (redirectCount < MAX_REDIRECTS) {
+      if (!(await isValidTargetUrl(currentUrl))) {
+        clearTimeout(timeout);
+        return NextResponse.json({ error: "Invalid or restricted target URL" }, { status: 400 });
+      }
+
+      const tempResponse = await undiciFetch(currentUrl, {
+        headers: upstreamHeaders,
+        signal: controller.signal,
+        redirect: "manual",
+        dispatcher: sslAgent,
+      });
+
+      if (tempResponse.status >= 300 && tempResponse.status < 400) {
+        const location = tempResponse.headers.get("location");
+        if (!location) {
+          response = tempResponse;
+          break;
+        }
+        currentUrl = resolveUrl(location, currentUrl);
+        redirectCount++;
+        // Consume response body to release network resources
+        await tempResponse.text().catch(() => {});
+        continue;
+      }
+
+      response = tempResponse;
+      break;
+    }
+
     clearTimeout(timeout);
+
+    if (redirectCount >= MAX_REDIRECTS) {
+      return NextResponse.json({ error: "Too many redirects" }, { status: 508 });
+    }
+
+    if (!response) {
+      return NextResponse.json({ error: "Failed to fetch from target URL" }, { status: 500 });
+    }
 
     if (!response.ok && response.status !== 206) {
       return NextResponse.json(
