@@ -4,9 +4,9 @@ import Image from "next/image";
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Hls from "hls.js";
-// dashjs is loaded dynamically because it requires `window` (browser-only)
+// shaka-player is loaded dynamically because it requires `window` (browser-only)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type DashMediaPlayer = any;
+type ShakaPlayer = any;
 import { motion, AnimatePresence } from "motion/react";
 import {
   Tv,
@@ -115,7 +115,7 @@ export default function IPTVPlayer() {
   const unmuteCleanupRef = useRef<(() => void) | null>(null);
 
   const hlsRef = useRef<Hls | null>(null);
-  const dashRef = useRef<DashMediaPlayer | null>(null);
+  const shakaRef = useRef<ShakaPlayer | null>(null);
   const userMutedRef = useRef(false);
   const isMutedRef = useRef(isMuted);
   const volumeRef = useRef(volume);
@@ -1125,9 +1125,9 @@ export default function IPTVPlayer() {
         hlsRef.current = null;
       }
 
-      if (dashRef.current) {
-        dashRef.current.destroy().catch(() => {});
-        dashRef.current = null;
+      if (shakaRef.current) {
+        shakaRef.current.destroy().catch(() => {});
+        shakaRef.current = null;
       }
 
       // Helper: attempt play with muted fallback chain (handles Firefox strict autoplay)
@@ -1192,7 +1192,7 @@ export default function IPTVPlayer() {
             }
 
             const player = new shaka.Player();
-            dashRef.current = player;
+            shakaRef.current = player;
             await player.attach(video);
 
             // Live stream tuning — mirrors test/1.html config (excluding removed gap configurations in Shaka v4+)
@@ -1376,9 +1376,9 @@ export default function IPTVPlayer() {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
-      if (dashRef.current) {
-        dashRef.current.destroy().catch(() => {});
-        dashRef.current = null;
+      if (shakaRef.current) {
+        shakaRef.current.destroy().catch(() => {});
+        shakaRef.current = null;
       }
       if (video) {
         video.src = "";
