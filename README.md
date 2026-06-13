@@ -19,7 +19,10 @@ A modern, high-performance, and premium web-based IPTV player built with **Next.
 ## ✨ Features
 
 - 📺 **Cinematic Video Player**: Large, center-aligned, aspect-ratio locked media container utilizing HLS.js and native iOS Safari player engines. Supports Picture-in-Picture (PiP), custom volume controls, double-tap seek, and auto-fallback muted play.
-- 🚀 **Multi-Playlist Concurrent Loading**: Automatically initiates requests for all default playlists (**Sports**, **Universal**, **Bangla**, and **FIFA**) immediately when loading the home page. Displays channel counts instantly and sets the **Sports** playlist as selected by default.
+- 🔑 **DASH & ClearKey DRM Support**: Fully integrated **Shaka Player** engine for playing `.mpd` (DASH) streams. Supports automated decryption using ClearKey DRM configurations (decoding `kid` and `key` tags from the JSON database).
+- 🔄 **Advanced Error Recovery & Fallbacks**: Automatic recovery loops for HLS.js network and media failures. Implements a **10-second automatic channel switcher fallback** that automatically plays the next channel in the list if the current one fails to start.
+- 🛡️ **Anti-SSRF Security & DNS Validation**: Proxy API endpoint protects internal infrastructure by performing DNS resolution lookup on target hostnames to block private, local, loopback, or link-local IP addresses.
+- 🌐 **CORS & Geo-Block Bypass**: Upstream proxy fetches streams using custom Undici Agents (TLS v1+ legacy cipher compatibility) and dynamically rewrites/injects headers (`Referer`, `Origin`, and `Range`) to bypass hotlink restrictions and CORS issues.
 - 💾 **SHA-256 Hash-Based IndexedDB Cache**: Caches each default playlist in the browser using IndexedDB. On page load, it queries a lightweight `/api/iptv/channels/hash?type=...` endpoint. If unchanged, channels load instantly from cache, saving bandwidth and eliminating player lag.
 - 📂 **High-Speed BDIX FTP Portal**: An elegant `/ftp` directory showing local BDIX movie and media servers, complete with real-time online status indicators, host configurations, speed diagnostics, and instant redirection link components.
 - 👥 **Real-Time Watcher Telemetry**: Integrated directly into the channel list header, using a non-blocking session heartbeat endpoint to monitor active viewers concurrently.
@@ -110,7 +113,8 @@ The repository includes a built-in Node.js converter script that automatically s
 - **Library**: [React 19](https://react.dev/)
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 - **Animations**: [Motion](https://motion.dev/)
-- **Stream Engine**: [HLS.js](https://github.com/video-dev/hls.js/)
+- **Stream Engines**: [HLS.js](https://github.com/video-dev/hls.js/) & [Shaka Player](https://github.com/shaka-project/shaka-player) (for DASH & ClearKey DRM)
+- **HTTP Client**: [Undici](https://github.com/nodejs/undici) (for secure proxy streaming)
 
 ---
 
@@ -130,7 +134,22 @@ Ensure you have **Node.js** (**v22.19.0** or newer) installed.
    cd iptv
    ```
 
-2. Install the dependencies:
+2. Configure environment variables:
+   Create a `.env` file in the root directory:
+   ```env
+   # Site Configuration
+   NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+   # Popup Modals Configuration
+   SHOW_POPUP=True
+   DISABLE_WC_POPUP=True
+   DISABLE_TG_POPUP=False
+
+   # Developer/Local Subnet Origins (CORS validation bypass)
+   ALLOWED_DEV_ORIGINS=live.shajon.dev,192.168.0.57
+   ```
+
+3. Install the dependencies:
    ```bash
    npm install
    ```
