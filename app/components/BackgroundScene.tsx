@@ -5,17 +5,7 @@ import React from "react";
 export default function BackgroundScene() {
   return (
     <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        zIndex: 0,
-        backgroundColor: "#070414",
-        overflow: "hidden",
-        pointerEvents: "none",
-      }}
+      className="fixed inset-0 z-0 bg-zinc-50 dark:bg-[#070414] overflow-hidden pointer-events-none transition-colors duration-500"
     >
       {/* Deep Cyber Radial Glows */}
       <div
@@ -54,6 +44,7 @@ export default function BackgroundScene() {
         }}
       >
         <div
+          className="dark:opacity-100 opacity-20 transition-opacity duration-500"
           style={{
             position: "absolute",
             width: "100%",
@@ -61,8 +52,8 @@ export default function BackgroundScene() {
             top: 0,
             left: 0,
             backgroundImage: `
-              linear-gradient(to right, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 1px, transparent 1px)
+              linear-gradient(to right, rgba(139, 92, 246, 0.3) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(139, 92, 246, 0.3) 1px, transparent 1px)
             `,
             backgroundSize: "60px 60px",
             transform: "rotateX(75deg)",
@@ -75,12 +66,11 @@ export default function BackgroundScene() {
 
       {/* Ambient Grid/Net Overlay on entire viewport for tech vibe */}
       <div
+        className="absolute inset-0 dark:opacity-100 opacity-20 transition-opacity duration-500"
         style={{
-          position: "absolute",
-          inset: 0,
           backgroundImage: `
-            linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px)
+            linear-gradient(to right, rgba(139, 92, 246, 0.15) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(139, 92, 246, 0.15) 1px, transparent 1px)
           `,
           backgroundSize: "30px 30px",
         }}

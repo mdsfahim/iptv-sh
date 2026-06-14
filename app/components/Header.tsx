@@ -49,7 +49,7 @@ export default function Header() {
   return (
     <header
       className={`sticky top-0 z-50 w-full border-b transition-all duration-500 ${scrolled
-          ? "bg-[#070414]/80 backdrop-blur-xl border-white/[0.08] shadow-lg shadow-black/20 dark:bg-[#070414]/80 bg-white/85 dark:border-white/[0.08] border-black/10"
+          ? "bg-white/85 dark:bg-[#070414]/80 backdrop-blur-xl border-zinc-200 dark:border-white/[0.08] shadow-lg shadow-black/5 dark:shadow-black/20"
           : "bg-transparent border-transparent"
         }`}
     >
@@ -63,7 +63,7 @@ export default function Header() {
               transition={{ duration: 0.6, ease: "easeOut" }}
               className="flex items-center gap-2.5 sm:gap-4.5 cursor-pointer group"
             >
-              <div className="relative w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 sm:border-white/15 group-hover:border-primary/40 shadow-xl shadow-primary/20 bg-white/5 flex-shrink-0 transition-colors">
+              <div className="relative w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl overflow-hidden border border-zinc-200 dark:border-white/15 group-hover:border-primary/40 shadow-xl shadow-primary/10 dark:shadow-primary/20 bg-zinc-100 dark:bg-white/5 flex-shrink-0 transition-colors">
                 <Image
                   src="/logo.png"
                   alt="IPTV Player Logo"
@@ -75,13 +75,13 @@ export default function Header() {
               </div>
               <div className="flex flex-col justify-center">
                 {/* Mobile UI Brand */}
-                <span className="text-lg font-black tracking-tight text-white dark:text-white text-zinc-900 sm:hidden leading-none select-none">
+                <span className="text-lg font-black tracking-tight text-zinc-900 dark:text-white sm:hidden leading-none select-none">
                   IP<span className="gradient-text">TV</span>
                 </span>
 
                 {/* Desktop UI Brand */}
                 <div className="hidden sm:flex items-baseline gap-1">
-                  <span className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white dark:text-white text-zinc-900">
+                  <span className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-zinc-900 dark:text-white">
                     IP
                   </span>
                   <span className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight gradient-text">
@@ -93,7 +93,7 @@ export default function Header() {
                 <div className="hidden sm:flex items-center gap-2 mt-1.5">
                   <div className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[9px] sm:text-[10px] font-bold tracking-widest uppercase text-emerald-400">
+                    <span className="text-[9px] sm:text-[10px] font-bold tracking-widest uppercase text-emerald-600 dark:text-emerald-400">
                       LIVE BROADCAST
                     </span>
                   </div>
@@ -114,7 +114,7 @@ export default function Header() {
               className={`flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 active:scale-95 cursor-pointer ${
                 isFaqPage
                   ? "border-primary/50 bg-primary/10 text-primary animate-pulse"
-                  : "border-white/10 hover:border-primary/50 bg-white/5 hover:bg-primary/10 text-white dark:text-white text-zinc-900 dark:border-white/10 border-black/10"
+                  : "border-zinc-200 dark:border-white/10 hover:border-primary/50 bg-zinc-100 dark:bg-white/5 hover:bg-primary/10 text-zinc-900 dark:text-white"
               } font-bold text-xs sm:text-sm`}
             >
               <HelpCircle size={15} className="text-primary" />
@@ -125,7 +125,7 @@ export default function Header() {
             {mounted && (
               <button
                 onClick={toggleTheme}
-                className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-white/10 dark:border-white/10 border-black/10 hover:border-primary/50 bg-white/5 hover:bg-primary/10 text-white dark:text-white text-zinc-900 font-bold text-xs sm:text-sm transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 active:scale-95 cursor-pointer"
+                className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-zinc-200 dark:border-white/10 hover:border-primary/50 bg-zinc-100 dark:bg-white/5 hover:bg-primary/10 text-zinc-900 dark:text-white font-bold text-xs sm:text-sm transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 active:scale-95 cursor-pointer"
               >
                 {isDark ? (
                   <>
