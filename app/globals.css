@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Magic line to enable class-based dark mode in Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-background: #070414;
   --color-primary: #8b5cf6;
@@ -11,8 +14,8 @@
 
 @layer base {
   html, body {
-    background-color: #070414;
-    @apply text-white antialiased selection:bg-primary/30;
+    /* Removed the hardcoded dark colors and replaced them with dynamic Tailwind classes */
+    @apply bg-zinc-50 dark:bg-[#070414] text-zinc-900 dark:text-white antialiased selection:bg-primary/30 transition-colors duration-500;
   }
   body {
     font-family: 'Inter', 'Poppins', system-ui, -apple-system, sans-serif;
@@ -21,7 +24,8 @@
 }
 
 .glass-card {
-  @apply bg-card backdrop-blur-xl border border-card-border rounded-2xl;
+  /* Updated to adapt to light mode */
+  @apply bg-white/60 dark:bg-card backdrop-blur-xl border border-zinc-200 dark:border-card-border rounded-2xl transition-colors duration-500;
 }
 
 .gradient-text {

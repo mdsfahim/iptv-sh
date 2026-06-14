@@ -17,7 +17,7 @@ export const viewport: Viewport = {
   maximumScale: 5,
   themeColor: [
     { media: "(prefers-color-scheme: dark)", color: "#070414" },
-    { media: "(prefers-color-scheme: light)", color: "#070414" },
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
   ],
 };
 
@@ -92,7 +92,7 @@ export default function RootLayout({
 
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-zinc-50 dark:bg-[#070414] text-zinc-900 dark:text-white transition-colors duration-500">
         {children}
         <ClientPopupWrapper
           showPopup={showPopup}
