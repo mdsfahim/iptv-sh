@@ -1823,46 +1823,9 @@ export default function IPTVPlayer() {
                 </div>
               </div>
             </div>
-            
-            {/* Adsterra Bottom Banner */}
-            <AdBanner />
-            
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// Custom Adsterra Component
-function AdBanner() {
-  const adRef = useRef<HTMLDivElement>(null);
-  
-  useEffect(() => {
-    if (adRef.current && !adRef.current.hasChildNodes()) {
-      const conf = document.createElement("script");
-      conf.type = "text/javascript";
-      conf.innerHTML = `
-        atOptions = {
-          'key' : '8394b9c8adb22292590c65f16afa607e',
-          'format' : 'iframe',
-          'height' : 50,
-          'width' : 320,
-          'params' : {}
-        };
-      `;
-      const script = document.createElement("script");
-      script.type = "text/javascript";
-      script.src = "https://www.highperformanceformat.com/8394b9c8adb22292590c65f16afa607e/invoke.js";
-      
-      adRef.current.appendChild(conf);
-      adRef.current.appendChild(script);
-    }
-  }, []);
-
-  return (
-    <div className="w-full flex justify-center pt-2 pb-6">
-      <div ref={adRef} className="w-[320px] h-[50px] overflow-hidden rounded-lg shadow-sm border border-zinc-200 dark:border-white/10 bg-zinc-100 dark:bg-white/[0.02]" />
     </div>
   );
 }
