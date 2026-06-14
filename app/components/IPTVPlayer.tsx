@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Hls from "hls.js";
 // shaka-player is loaded dynamically because it requires `window` (browser-only)
@@ -122,7 +121,6 @@ export default function IPTVPlayer() {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [displayCount, setDisplayCount] = useState(80);
 
-  // Playlist Management States
   const [playlists, setPlaylists] = useState<Playlist[]>([
     { id: "sports", name: "Sports", type: "default", channels: [] },
     { id: "universal", name: "Universal", type: "default", channels: [] },
@@ -131,7 +129,6 @@ export default function IPTVPlayer() {
   ]);
   const [activePlaylistId, setActivePlaylistId] = useState<string>("sports");
 
-  // Custom playlist loading states
   const [playlistTab, setPlaylistTab] = useState<"browse" | "manage">("browse");
   const [importUrl, setImportUrl] = useState("");
   const [playlistName, setPlaylistName] = useState("");
@@ -150,7 +147,6 @@ export default function IPTVPlayer() {
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const [retryKey, setRetryKey] = useState(0);
 
-  // Custom Player controls states
   const [isPaused, setIsPaused] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [volume, setVolume] = useState(0.8);
@@ -172,7 +168,6 @@ export default function IPTVPlayer() {
   const [viewerCount, setViewerCount] = useState<number | null>(null);
 
   useEffect(() => {
-    // Generate or retrieve session ID from sessionStorage
     const getOrCreateSessionId = (): string => {
       if (typeof window === "undefined") return "";
       let id = sessionStorage.getItem("iptv_viewer_session_id");
@@ -205,18 +200,13 @@ export default function IPTVPlayer() {
       }
     };
 
-    // Send initial heartbeat
     sendHeartbeat();
-
-    // Send heartbeat every 15 seconds
     const interval = setInterval(sendHeartbeat, 15000);
-
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     isMutedRef.current = isMuted;
-    // Sync muted state imperatively instead of via React prop to avoid video re-renders
     if (videoRef.current) {
       videoRef.current.muted = isMuted;
     }
@@ -226,14 +216,11 @@ export default function IPTVPlayer() {
     volumeRef.current = volume;
   }, [volume]);
 
-  // YouTube-like Double Tap Seek State
   const [activeSeekIndicator, setActiveSeekIndicator] = useState<{
     side: "left" | "right";
     visible: boolean;
   }>({ side: "left", visible: false });
-  const seekIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
+  const seekIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const resetControlsTimeout = useCallback(() => {
@@ -258,7 +245,6 @@ export default function IPTVPlayer() {
     if (unmuteCleanupRef.current) {
       unmuteCleanupRef.current();
     }
-
     const unmute = () => {
       const v = videoRef.current;
       if (v && v.muted) {
@@ -271,21 +257,18 @@ export default function IPTVPlayer() {
       }
       cleanup();
     };
-
     const cleanup = () => {
       document.removeEventListener("click", unmute);
       document.removeEventListener("touchstart", unmute);
       document.removeEventListener("keydown", unmute);
       unmuteCleanupRef.current = null;
     };
-
     document.addEventListener("click", unmute);
     document.addEventListener("touchstart", unmute);
     document.addEventListener("keydown", unmute);
     unmuteCleanupRef.current = cleanup;
   }, []);
 
-  // Auto-hide controls after 2s if video is playing
   useEffect(() => {
     const timeout = setTimeout(() => {
       const video = videoRef.current;
@@ -295,32 +278,19 @@ export default function IPTVPlayer() {
     }, 2000);
     controlsTimeoutRef.current = timeout;
     return () => {
-      if (controlsTimeoutRef.current) {
-        clearTimeout(controlsTimeoutRef.current);
-      }
-      if (clickTimeoutRef.current) {
-        clearTimeout(clickTimeoutRef.current);
-      }
-      if (unmuteCleanupRef.current) {
-        unmuteCleanupRef.current();
-      }
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+      if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+      if (unmuteCleanupRef.current) unmuteCleanupRef.current();
     };
   }, []);
-
-
 
   useEffect(() => {
     const handleFullscreenChange = () => {
       const isFs = !!document.fullscreenElement;
       isFullscreenRef.current = isFs;
-
-      // Notify BackgroundScene to pause/resume animation
       window.dispatchEvent(new CustomEvent("iptv-fullscreen", { detail: { isFullscreen: isFs } }));
-
-      // Batch state updates
       setIsFullscreen(isFs);
       if (!isFs) {
-        // Delay orientation unlock to avoid layout thrashing during exit animation
         setTimeout(() => {
           try {
             const orientation = window.screen?.orientation as ScreenOrientation & {
@@ -331,7 +301,7 @@ export default function IPTVPlayer() {
               orientation.unlock();
             }
           } catch {
-            // orientation.unlock() not supported
+            // ignore
           }
         }, 150);
       }
@@ -344,12 +314,9 @@ export default function IPTVPlayer() {
     };
   }, []);
 
-
-
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-
     const handlePlay = () => setIsPaused(false);
     const handlePause = () => setIsPaused(true);
     const handleVolumeChange = () => {
@@ -400,9 +367,7 @@ export default function IPTVPlayer() {
         }
       }
       video.play().catch((err) => {
-        if (err.name !== "AbortError") {
-          console.warn("Play failed:", err);
-        }
+        if (err.name !== "AbortError") console.warn("Play failed:", err);
       });
     } else {
       video.pause();
@@ -427,9 +392,7 @@ export default function IPTVPlayer() {
     resetControlsTimeout();
   };
 
-  const handleVolumeChangeSlider = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleVolumeChangeSlider = (e: React.ChangeEvent<HTMLInputElement>) => {
     const video = videoRef.current;
     if (!video) return;
     const newVol = parseFloat(e.target.value);
@@ -445,33 +408,23 @@ export default function IPTVPlayer() {
     resetControlsTimeout();
   };
 
-
-
   const handleFullscreen = () => {
     const container = playerContainerRef.current;
     const video = videoRef.current;
     if (!container) return;
-
-    // iOS Safari: use video.webkitEnterFullscreen() since div.requestFullscreen() is unsupported
     const videoEl = video as HTMLVideoElement & {
       webkitEnterFullscreen?: () => void;
       webkitExitFullscreen?: () => void;
     };
-    if (
-      !document.fullscreenElement &&
-      !container.requestFullscreen &&
-      videoEl?.webkitEnterFullscreen
-    ) {
+    if (!document.fullscreenElement && !container.requestFullscreen && videoEl?.webkitEnterFullscreen) {
       videoEl.webkitEnterFullscreen();
       resetControlsTimeout();
       return;
     }
-
     if (!document.fullscreenElement) {
       container
         .requestFullscreen()
         .then(() => {
-          // Delay orientation lock to let browser finish fullscreen animation
           setTimeout(() => {
             try {
               const orientation = window.screen?.orientation as ScreenOrientation & {
@@ -479,20 +432,16 @@ export default function IPTVPlayer() {
                 unlock?: () => void;
               };
               if (orientation && typeof orientation.lock === "function") {
-                orientation
-                  .lock("landscape")
-                  .catch(() => { /* orientation lock not supported */ });
+                orientation.lock("landscape").catch(() => {});
               }
             } catch {
-              // orientation API not available
+              // ignore
             }
           }, 300);
         })
         .catch((err) => console.warn("Fullscreen request failed:", err));
     } else {
-      document
-        .exitFullscreen()
-        .catch((err) => console.warn("Exit fullscreen failed:", err));
+      document.exitFullscreen().catch((err) => console.warn("Exit fullscreen failed:", err));
     }
     resetControlsTimeout();
   };
@@ -500,11 +449,9 @@ export default function IPTVPlayer() {
   const handleSeek = (seconds: number) => {
     const video = videoRef.current;
     if (!video) return;
-
     try {
       const seekable = video.seekable;
       let newTime = video.currentTime + seconds;
-
       if (seekable && seekable.length > 0) {
         const start = seekable.start(0);
         const end = seekable.end(seekable.length - 1);
@@ -514,7 +461,6 @@ export default function IPTVPlayer() {
         if (newTime < 0) newTime = 0;
         if (newTime > video.duration) newTime = video.duration;
       }
-
       video.currentTime = newTime;
     } catch (err) {
       console.warn("Seeking failed:", err);
@@ -522,17 +468,13 @@ export default function IPTVPlayer() {
     resetControlsTimeout();
   };
 
-  // Sync isPip state with video element events
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-
     const handleEnterPip = () => setIsPip(true);
     const handleLeavePip = () => setIsPip(false);
-
     video.addEventListener("enterpictureinpicture", handleEnterPip);
     video.addEventListener("leavepictureinpicture", handleLeavePip);
-
     return () => {
       video.removeEventListener("enterpictureinpicture", handleEnterPip);
       video.removeEventListener("leavepictureinpicture", handleLeavePip);
@@ -542,7 +484,6 @@ export default function IPTVPlayer() {
   const handlePip = async () => {
     const video = videoRef.current;
     if (!video) return;
-
     try {
       if (document.pictureInPictureElement) {
         await document.exitPictureInPicture();
@@ -555,36 +496,24 @@ export default function IPTVPlayer() {
     resetControlsTimeout();
   };
 
-  const isPipSupported =
-    typeof document !== "undefined" && document.pictureInPictureEnabled;
+  const isPipSupported = typeof document !== "undefined" && document.pictureInPictureEnabled;
 
   const handlePlayerClick = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest(".player-controls")) {
-      return;
-    }
-
-    if (playerStatus !== "playing") {
-      return;
-    }
-
+    if ((e.target as HTMLElement).closest(".player-controls")) return;
+    if (playerStatus !== "playing") return;
     if (clickTimeoutRef.current) {
       clearTimeout(clickTimeoutRef.current);
       clickTimeoutRef.current = null;
       return;
     }
-
     clickTimeoutRef.current = setTimeout(() => {
       const timeSinceShown = Date.now() - controlsShownAtRef.current;
       if (timeSinceShown < 500) {
-        // Controls were just shown, keep them visible and reset the timeout
         resetControlsTimeout();
       } else {
-        // Toggle controls visibility
         setShowControls((prev) => {
           if (prev) {
-            if (controlsTimeoutRef.current) {
-              clearTimeout(controlsTimeoutRef.current);
-            }
+            if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
             return false;
           } else {
             resetControlsTimeout();
@@ -597,33 +526,20 @@ export default function IPTVPlayer() {
   };
 
   const handlePlayerDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest(".player-controls")) {
-      return;
-    }
-
+    if ((e.target as HTMLElement).closest(".player-controls")) return;
     if (clickTimeoutRef.current) {
       clearTimeout(clickTimeoutRef.current);
       clickTimeoutRef.current = null;
     }
-
     const container = playerContainerRef.current;
     if (!container) return;
-
     const rect = container.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const width = rect.width;
     const isLeft = clickX < width / 2;
-
     handleSeek(isLeft ? -10 : 10);
-
-    if (seekIndicatorTimeoutRef.current) {
-      clearTimeout(seekIndicatorTimeoutRef.current);
-    }
-    setActiveSeekIndicator({
-      side: isLeft ? "left" : "right",
-      visible: true,
-    });
-
+    if (seekIndicatorTimeoutRef.current) clearTimeout(seekIndicatorTimeoutRef.current);
+    setActiveSeekIndicator({ side: isLeft ? "left" : "right", visible: true });
     seekIndicatorTimeoutRef.current = setTimeout(() => {
       setActiveSeekIndicator((prev) => ({ ...prev, visible: false }));
     }, 650);
@@ -633,29 +549,22 @@ export default function IPTVPlayer() {
     resetControlsTimeout();
   };
 
-  // Hydrate playlists from localStorage on client-side mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem("iptv_saved_playlists");
       const savedActiveId = localStorage.getItem("iptv_active_playlist_id");
-
       if (saved) {
         const parsedSaved = JSON.parse(saved) as Playlist[];
-        const customPlaylists = parsedSaved.filter(p =>
+        const customPlaylists = parsedSaved.filter(p => 
           p.id !== "default" && p.id !== "sports" && p.id !== "universal" && p.id !== "bangla" && p.id !== "fifa"
         );
-
         setTimeout(() => {
           setPlaylists(prev => {
             const defaults = prev.filter(p => p.type === "default");
-            return [
-              ...defaults,
-              ...customPlaylists
-            ];
+            return [...defaults, ...customPlaylists];
           });
         }, 0);
       }
-
       if (savedActiveId) {
         setTimeout(() => {
           const resolvedActiveId = savedActiveId === "default" ? "sports" : savedActiveId;
@@ -667,9 +576,8 @@ export default function IPTVPlayer() {
     }
   }, []);
 
-  // Save custom playlists to localStorage whenever they change
   useEffect(() => {
-    const customPlaylists = playlists.filter(p =>
+    const customPlaylists = playlists.filter(p => 
       p.id !== "default" && p.id !== "sports" && p.id !== "universal" && p.id !== "bangla" && p.id !== "fifa"
     );
     try {
@@ -679,14 +587,12 @@ export default function IPTVPlayer() {
     }
   }, [playlists]);
 
-  // Sync activePlaylistId to localStorage
   useEffect(() => {
     if (activePlaylistId) {
       localStorage.setItem("iptv_active_playlist_id", activePlaylistId);
     }
   }, [activePlaylistId]);
 
-  // --- IndexedDB Cache Helpers for default playlists ---
   const openCacheDB = useCallback((): Promise<IDBDatabase> => {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open("iptv-cache", 1);
@@ -711,14 +617,12 @@ export default function IPTVPlayer() {
         req.onsuccess = () => {
           const result = req.result;
           if (!result) return resolve(null);
-          // Expire cache after CACHE_MAX_AGE_MS
           const cachedAt = result.cachedAt || 0;
           if (Date.now() - cachedAt > CACHE_MAX_AGE_MS) {
-            // Cache expired — delete and return null
             try {
               const delTx = db.transaction("channels", "readwrite");
               delTx.objectStore("channels").delete(`cached-data-${playlistId}`);
-            } catch { /* ignore cleanup errors */ }
+            } catch { /* ignore */ }
             return resolve(null);
           }
           resolve({ channels: result.channels, hash: result.hash });
@@ -749,7 +653,6 @@ export default function IPTVPlayer() {
     }
   }, [openCacheDB]);
 
-  // Helper: fetch fresh channels from server and update state + cache
   const fetchAndUpdatePlaylist = useCallback(async (playlistId: string) => {
     const response = await fetch(`/api/iptv/channels?type=${playlistId}`, {
       cache: "no-store",
@@ -759,142 +662,100 @@ export default function IPTVPlayer() {
     }
     const data = await response.json();
     const serverHash = response.headers.get("X-Channels-Hash") || "";
-
     setPlaylists((prev) =>
-      prev.map((p) =>
-        p.id === playlistId ? { ...p, channels: data } : p
-      )
+      prev.map((p) => (p.id === playlistId ? { ...p, channels: data } : p))
     );
-
-    // Store in IndexedDB for next load
     if (serverHash) {
       await setCachedChannels(playlistId, data, serverHash);
     }
   }, [setCachedChannels]);
 
-  // 1. Fetch channel metadata with IndexedDB cache + SHA-256 hash validation for all default playlists
   useEffect(() => {
     const defaultPlaylistsToLoad = playlists.filter(
       (p) => p.type === "default" && p.channels.length === 0
     );
-
     if (defaultPlaylistsToLoad.length === 0) {
       setTimeout(() => setLoading(false), 0);
       return;
     }
-
-    // Show loading spinner only if the active playlist is empty and needs to load
     const activePlaylist = playlists.find((p) => p.id === activePlaylistId);
     if (activePlaylist && activePlaylist.type === "default" && activePlaylist.channels.length === 0) {
       setTimeout(() => setLoading(true), 0);
     }
-
     async function loadAll() {
       try {
         await Promise.all(
           defaultPlaylistsToLoad.map(async (pl) => {
             const playlistId = pl.id;
-
-            // Step 1: Check IndexedDB cache (auto-expires after 15 min)
             const cached = await getCachedChannels(playlistId);
             if (cached && cached.channels.length > 0) {
               setPlaylists((prev) =>
-                prev.map((p) =>
-                  p.id === playlistId ? { ...p, channels: cached.channels } : p
-                )
+                prev.map((p) => (p.id === playlistId ? { ...p, channels: cached.channels } : p))
               );
-
-              // If this is the active playlist, we can hide the loading spinner now
               if (playlistId === activePlaylistId) {
                 setTimeout(() => setLoading(false), 0);
               }
-
-              // Step 2: Fetch only the hash to verify freshness
               try {
                 const hashResponse = await fetch(`/api/iptv/channels/hash?type=${playlistId}`, {
                   cache: "no-store",
                 });
                 if (hashResponse.ok) {
                   const { hash: serverHash } = await hashResponse.json();
-                  if (serverHash === cached.hash) {
-                    return; // Cache is fresh
-                  }
-                  // Hash mismatch — clear stale cache and fetch fresh data
+                  if (serverHash === cached.hash) return;
                   await clearCachedChannels(playlistId);
                 }
               } catch {
-                // Ignore failure, fall through to reload
+                // ignore
               }
             }
-
-            // Step 3: Fetch full data
             await fetchAndUpdatePlaylist(playlistId);
           })
         );
       } catch (err: unknown) {
         console.error("Error loading default playlists:", err);
-        // Only set error state if it affects the active playlist
         const activePlaylistAfter = playlists.find((p) => p.id === activePlaylistId);
         if (
           activePlaylistAfter &&
           activePlaylistAfter.type === "default" &&
           activePlaylistAfter.channels.length === 0
         ) {
-          const message =
-            err instanceof Error
-              ? err.message
-              : "Failed to load channel list. Please try again.";
+          const message = err instanceof Error ? err.message : "Failed to load channel list. Please try again.";
           setError(message);
         }
       } finally {
         setTimeout(() => setLoading(false), 0);
       }
     }
-
     loadAll();
   }, [activePlaylistId, playlists, getCachedChannels, setCachedChannels, clearCachedChannels, fetchAndUpdatePlaylist]);
 
-  // Periodic background hash check — every 15 minutes, verify all default playlists and refresh if stale
   useEffect(() => {
-    const REFRESH_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
-
+    const REFRESH_INTERVAL_MS = 15 * 60 * 1000; 
     const checkAndRefresh = async () => {
       const defaultPlaylists = playlists.filter((p) => p.type === "default" && p.channels.length > 0);
       for (const pl of defaultPlaylists) {
         try {
-          // Clear expired cache entries
           await clearCachedChannels(pl.id);
-
-          // Check server hash
-          const hashResponse = await fetch(`/api/iptv/channels/hash?type=${pl.id}`, {
-            cache: "no-store",
-          });
+          const hashResponse = await fetch(`/api/iptv/channels/hash?type=${pl.id}`, { cache: "no-store" });
           if (!hashResponse.ok) continue;
           const { hash: serverHash } = await hashResponse.json();
-
-          // Check current cached hash
           const cached = await getCachedChannels(pl.id);
           if (cached && cached.hash === serverHash) continue;
-
-          // Hash mismatch or no cache — fetch fresh data
           await fetchAndUpdatePlaylist(pl.id);
         } catch {
-          // Silently ignore per-playlist refresh errors
+          // ignore
         }
       }
     };
-
     const intervalId = setInterval(checkAndRefresh, REFRESH_INTERVAL_MS);
     return () => clearInterval(intervalId);
   }, [playlists, getCachedChannels, clearCachedChannels, fetchAndUpdatePlaylist]);
 
-  // Sync active playlist channels to standard list representation
   useEffect(() => {
     const currentPlaylist = playlists.find(p => p.id === activePlaylistId);
     if (currentPlaylist) {
       const selectedChannelId = selectedChannel?.id;
       const selectedChannelUrl = selectedChannel?.url;
-
       setTimeout(() => {
         setChannels(currentPlaylist.channels);
         if (currentPlaylist.channels.length > 0) {
@@ -910,15 +771,12 @@ export default function IPTVPlayer() {
             setSelectedChannel(defaultChan || currentPlaylist.channels[0]);
           }
         } else {
-          if (!loading) {
-            setSelectedChannel(null);
-          }
+          if (!loading) setSelectedChannel(null);
         }
       }, 0);
     }
   }, [activePlaylistId, playlists, selectedChannel?.id, selectedChannel?.url, loading]);
 
-  // M3U & JSON Parsing Helpers
   const parseM3U = (text: string): Channel[] => {
     const lines = text.split(/\r?\n/);
     const parsedChannels: Channel[] = [];
@@ -927,16 +785,12 @@ export default function IPTVPlayer() {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
-
       if (line.startsWith("#EXTINF:")) {
         currentChannel = {};
-
         const logoMatch = line.match(/(?:tvg-logo|logo)="([^"]+)"/i);
         if (logoMatch) currentChannel.logo = logoMatch[1];
-
         const groupMatch = line.match(/(?:group-title|tvg-group|group)="([^"]+)"/i);
         if (groupMatch) currentChannel.group = groupMatch[1];
-
         const commaIndex = line.lastIndexOf(",");
         if (commaIndex !== -1) {
           currentChannel.name = line.substring(commaIndex + 1).trim();
@@ -955,13 +809,11 @@ export default function IPTVPlayer() {
           currentChannel.id = `custom-ch-${parsedChannels.length}-${Date.now()}`;
           if (!currentChannel.group) currentChannel.group = "Custom";
           if (!currentChannel.logo) currentChannel.logo = "";
-
           parsedChannels.push(currentChannel as Channel);
         }
         currentChannel = {};
       }
     }
-
     return parsedChannels;
   };
 
@@ -1004,7 +856,6 @@ export default function IPTVPlayer() {
     });
   };
 
-  // Custom playlist handlers
   const processFile = (file: File) => {
     setImportError(null);
     const reader = new FileReader();
@@ -1012,17 +863,12 @@ export default function IPTVPlayer() {
       try {
         const text = event.target?.result as string;
         let parsed: Channel[] = [];
-
         if (file.name.endsWith(".json")) {
           parsed = parseJSON(text);
         } else {
           parsed = parseM3U(text);
         }
-
-        if (parsed.length === 0) {
-          throw new Error("No channels could be parsed from this file.");
-        }
-
+        if (parsed.length === 0) throw new Error("No channels could be parsed from this file.");
         const name = uploadPlaylistName.trim() || file.name.replace(/\.[^/.]+$/, "");
         const newPlaylist: Playlist = {
           id: `playlist-${Date.now()}`,
@@ -1030,7 +876,6 @@ export default function IPTVPlayer() {
           type: "upload",
           channels: parsed,
         };
-
         setPlaylists(prev => [...prev, newPlaylist]);
         setActivePlaylistId(newPlaylist.id);
         setPlaylistTab("browse");
@@ -1044,9 +889,7 @@ export default function IPTVPlayer() {
         );
       }
     };
-    reader.onerror = () => {
-      setImportError("Error reading file.");
-    };
+    reader.onerror = () => setImportError("Error reading file.");
     reader.readAsText(file);
   };
 
@@ -1080,31 +923,22 @@ export default function IPTVPlayer() {
   const handleUrlImport = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!importUrl) return;
-
     setIsImporting(true);
     setImportError(null);
 
     try {
       const proxiedUrl = `/api/iptv/proxy?url=${encodeURIComponent(importUrl.trim())}`;
       const res = await fetch(proxiedUrl);
-      if (!res.ok) {
-        throw new Error(`Failed to fetch from URL (Status ${res.status})`);
-      }
-
+      if (!res.ok) throw new Error(`Failed to fetch from URL (Status ${res.status})`);
       const text = await res.text();
       let parsed: Channel[] = [];
-
       const trimmedText = text.trim();
       if (trimmedText.startsWith("[") || trimmedText.startsWith("{")) {
         parsed = parseJSON(text);
       } else {
         parsed = parseM3U(text);
       }
-
-      if (parsed.length === 0) {
-        throw new Error("No channels could be parsed from this URL.");
-      }
-
+      if (parsed.length === 0) throw new Error("No channels could be parsed from this URL.");
       let name = playlistName.trim();
       if (!name) {
         try {
@@ -1115,7 +949,6 @@ export default function IPTVPlayer() {
           name = "Imported URL Playlist";
         }
       }
-
       const newPlaylist: Playlist = {
         id: `playlist-${Date.now()}`,
         name: name,
@@ -1123,7 +956,6 @@ export default function IPTVPlayer() {
         url: importUrl,
         channels: parsed,
       };
-
       setPlaylists(prev => [...prev, newPlaylist]);
       setActivePlaylistId(newPlaylist.id);
       setImportUrl("");
@@ -1131,9 +963,7 @@ export default function IPTVPlayer() {
       setPlaylistTab("browse");
     } catch (err) {
       setImportError(
-        err instanceof Error
-          ? err.message
-          : "Failed to import from URL. Please check the link or CORS policy."
+        err instanceof Error ? err.message : "Failed to import from URL. Please check the link or CORS policy."
       );
     } finally {
       setIsImporting(false);
@@ -1143,17 +973,13 @@ export default function IPTVPlayer() {
   const handleDeletePlaylist = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (id === "default" || id === "sports" || id === "universal" || id === "bangla" || id === "fifa") return;
-
     setPlaylists(prev => {
       const updated = prev.filter(p => p.id !== id);
-      if (activePlaylistId === id) {
-        setActivePlaylistId("sports");
-      }
+      if (activePlaylistId === id) setActivePlaylistId("sports");
       return updated;
     });
   };
 
-  // 2. Initialize Hls.js/Native player and load stream
   const initializeStream = useCallback(
     (chan: Channel, isUserClick: boolean) => {
       const video = videoRef.current;
@@ -1164,18 +990,16 @@ export default function IPTVPlayer() {
       setIsBuffering(false);
       loadedUrlRef.current = chan.url;
 
-      // 1. Destroy and cleanup existing players first to avoid race conditions during detached state
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
 
       if (shakaRef.current) {
-        shakaRef.current.destroy().catch(() => { });
+        shakaRef.current.destroy().catch(() => {});
         shakaRef.current = null;
       }
 
-      // 2. Fully reset video element to clear stale state (fixes Firefox)
       video.pause();
       video.removeAttribute("src");
       video.load();
@@ -1197,7 +1021,6 @@ export default function IPTVPlayer() {
         video.muted = isMutedRef.current;
       }
 
-      // Helper: attempt play with muted fallback chain (handles Firefox strict autoplay)
       const attemptPlay = () => {
         video
           .play()
@@ -1207,7 +1030,6 @@ export default function IPTVPlayer() {
           })
           .catch((err) => {
             if (err.name === "NotAllowedError") {
-              // Autoplay blocked — retry muted
               video.muted = true;
               setIsMuted(true);
               video
@@ -1218,38 +1040,26 @@ export default function IPTVPlayer() {
                   setupUnmuteOnInteraction();
                 })
                 .catch((playErr) => {
-                  if (playErr.name !== "AbortError") {
-                    console.error("Muted autoplay also failed:", playErr);
-                  }
-                  // Final fallback: show paused state with play button
+                  if (playErr.name !== "AbortError") console.error("Muted autoplay also failed:", playErr);
                   setPlayerStatus("playing");
                   setIsPaused(true);
                 });
             } else {
-              if (err.name !== "AbortError") {
-                console.warn("Play failed:", err);
-              }
+              if (err.name !== "AbortError") console.warn("Play failed:", err);
               setPlayerStatus("playing");
               setIsPaused(video.paused);
             }
           });
       };
 
-      // Detect if this is a DASH stream
       const isDash = chan.type === "dash" || chan.url.endsWith(".mpd");
 
       if (isDash) {
-        // --- DASH playback via Shaka Player with ClearKey DRM ---
-        // Mirrors the working implementation in test/1.html exactly
         (async () => {
           try {
-            // Dynamically load Shaka Player from node module (browser-only, needs window)
             const shakaModule = await import("shaka-player");
             const shaka = shakaModule.default || shakaModule;
-
-            // Guard: bail if user switched channels while module was loading
             if (loadedUrlRef.current !== chan.url) return;
-
             shaka.polyfill.installAll();
 
             if (!shaka.Player.isBrowserSupported()) {
@@ -1261,60 +1071,25 @@ export default function IPTVPlayer() {
             const player = new shaka.Player();
             shakaRef.current = player;
             await player.attach(video);
-
-            // Live stream tuning — mirrors test/1.html config (excluding removed gap configurations in Shaka v4+)
             player.configure({
-              manifest: {
-                defaultPresentationDelay: 8,
-                ignoreDrmInfo: true,
-                dash: { ignoreMinBufferTime: true, ignoreSuggestedPresentationDelay: true, autoCorrectDrift: true },
-              },
-              streaming: {
-                bufferingGoal: 10,
-                rebufferingGoal: 0.8,
-                bufferBehind: 12,
-                stallEnabled: true,
-                stallThreshold: 1,
-                stallSkip: 0.15,
-                retryParameters: { maxAttempts: 12, baseDelay: 500, backoffFactor: 1.6, fuzzFactor: 0.35, timeout: 15000 },
-              },
-              abr: {
-                enabled: true,
-                defaultBandwidthEstimate: 4500000,
-                switchInterval: 1,
-                clearBufferSwitch: false,
-                restrictToElementSize: true,
-                restrictToScreenSize: true,
-                bandwidthDowngradeTarget: 0.92,
-                bandwidthUpgradeTarget: 0.72,
-              },
+              manifest: { defaultPresentationDelay: 8, ignoreDrmInfo: true, dash: { ignoreMinBufferTime: true, ignoreSuggestedPresentationDelay: true, autoCorrectDrift: true } },
+              streaming: { bufferingGoal: 10, rebufferingGoal: 0.8, bufferBehind: 12, stallEnabled: true, stallThreshold: 1, stallSkip: 0.15, retryParameters: { maxAttempts: 12, baseDelay: 500, backoffFactor: 1.6, fuzzFactor: 0.35, timeout: 15000 } },
+              abr: { enabled: true, defaultBandwidthEstimate: 4500000, switchInterval: 1, clearBufferSwitch: false, restrictToElementSize: true, restrictToScreenSize: true, bandwidthDowngradeTarget: 0.92, bandwidthUpgradeTarget: 0.72 },
             });
 
-            // ClearKey DRM — Shaka takes raw hex kid/key directly (no base64 conversion)
             if (chan.kid && chan.key) {
-              player.configure({
-                drm: {
-                  clearKeys: {
-                    [String(chan.kid).toLowerCase()]: String(chan.key).toLowerCase(),
-                  },
-                },
-              });
+              player.configure({ drm: { clearKeys: { [String(chan.kid).toLowerCase()]: String(chan.key).toLowerCase() } } });
             }
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             player.addEventListener("error", (event: any) => {
               const detail = event?.detail;
-              console.error("[SHAKA] DASH error detail:", JSON.stringify(detail));
               const code = detail?.code ?? "";
               let errorMsg = "DASH stream error" + (code ? " • Code: " + code : "");
-              if (code === 6020) {
-                errorMsg += " • Missing browser DRM/EME support. If accessing over a local network IP (e.g. http://192.168.x.x), EME is blocked by Chrome/browsers. Please use http://localhost:3000 or configure HTTPS.";
-              }
+              if (code === 6020) errorMsg += " • Missing browser DRM/EME support. Please use http://localhost:3000 or configure HTTPS.";
               setPlayerStatus("error");
               setPlayerError(errorMsg);
             });
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             player.addEventListener("buffering", (event: any) => {
               if (!event.buffering) {
                 setPlayerStatus("playing");
@@ -1323,40 +1098,26 @@ export default function IPTVPlayer() {
             });
 
             await player.load(chan.url);
-
-            // Guard again after async load
             if (loadedUrlRef.current !== chan.url) {
-              await player.destroy().catch(() => { });
+              await player.destroy().catch(() => {});
               return;
             }
-
             attemptPlay();
           } catch (err: unknown) {
-            if (loadedUrlRef.current !== chan.url) return; // stale, ignore
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            if (loadedUrlRef.current !== chan.url) return; 
             const errObj = err as any;
             let errMsg = "DASH / MPD load failed";
             if (errObj) {
               if (errObj.code) errMsg += ` (Code: ${errObj.code})`;
-              if (errObj.category) errMsg += ` (Category: ${errObj.category})`;
-              if (errObj.severity) errMsg += ` (Severity: ${errObj.severity})`;
               if (errObj.message) errMsg += ` - ${errObj.message}`;
-              if (errObj.code === 6020) {
-                errMsg += " • Missing browser DRM/EME support. If accessing over a local network IP (e.g. http://192.168.x.x), EME is blocked by Chrome/browsers. Please use http://localhost:3000 or configure HTTPS.";
-              }
+              if (errObj.code === 6020) errMsg += " • Missing browser DRM/EME support.";
             }
-            console.error("[SHAKA] Load error detail:", JSON.stringify(errObj), errMsg);
             setPlayerError(errMsg);
             setPlayerStatus("error");
           }
         })();
       } else if (Hls.isSupported()) {
-        const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: true,
-          backBufferLength: 0,
-          startLevel: -1,
-        });
+        const hls = new Hls({ enableWorker: true, lowLatencyMode: true, backBufferLength: 0, startLevel: -1 });
         hlsRef.current = hls;
 
         hls.on(Hls.Events.MEDIA_ATTACHED, () => {
@@ -1377,71 +1138,49 @@ export default function IPTVPlayer() {
           if (data.fatal) {
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
-                console.warn(
-                  "Fatal HLS network error, attempting to recover..."
-                );
                 hls.startLoad();
                 break;
               case Hls.ErrorTypes.MEDIA_ERROR:
-                console.warn(
-                  "Fatal HLS media error, attempting to recover..."
-                );
                 hls.recoverMediaError();
                 break;
               default:
-                console.error("Fatal unrecoverable HLS error:", data);
                 setPlayerError(`Fatal HLS stream error (${data.type})`);
                 setPlayerStatus("error");
                 break;
             }
           }
         });
-
         hls.attachMedia(video);
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         const playableUrl = getPlayableUrl(chan.url);
         video.src = playableUrl;
-
-        const onLoadedMetadata = () => {
+        video.addEventListener("loadedmetadata", () => {
           if (!video.paused) {
             setPlayerStatus("playing");
             setIsPaused(false);
             return;
           }
           attemptPlay();
-        };
-
-        const onError = (e: Event) => {
-          console.error("Native video player error:", e);
+        }, { once: true });
+        video.addEventListener("error", () => {
           setPlayerError("Native video player playback error");
           setPlayerStatus("error");
-        };
-
-        video.addEventListener("loadedmetadata", onLoadedMetadata, {
-          once: true,
-        });
-        video.addEventListener("error", onError, { once: true });
+        }, { once: true });
       } else {
         setPlayerError("Your browser does not support stream playback.");
         setPlayerStatus("error");
       }
-
-      // Note: play() is handled inside MANIFEST_PARSED / onLoadedMetadata callbacks.
-      // A premature play() here would race with HLS.js and break Firefox.
     },
     [setupUnmuteOnInteraction]
   );
 
-  // 3. Play stream when a channel is selected or retryKey changes
   useEffect(() => {
     if (!selectedChannel) return;
-
     if (loadedUrlRef.current !== selectedChannel.url) {
       initializeStream(selectedChannel, false);
     }
   }, [selectedChannel, retryKey, initializeStream]);
 
-  // Clean up Hls and video elements on component unmount
   useEffect(() => {
     const video = videoRef.current;
     return () => {
@@ -1450,15 +1189,11 @@ export default function IPTVPlayer() {
         hlsRef.current = null;
       }
       if (shakaRef.current) {
-        shakaRef.current.destroy().catch(() => { });
+        shakaRef.current.destroy().catch(() => {});
         shakaRef.current = null;
       }
-      if (video) {
-        video.src = "";
-      }
-      if (unmuteCleanupRef.current) {
-        unmuteCleanupRef.current();
-      }
+      if (video) video.src = "";
+      if (unmuteCleanupRef.current) unmuteCleanupRef.current();
       loadedUrlRef.current = null;
     };
   }, []);
@@ -1472,13 +1207,9 @@ export default function IPTVPlayer() {
     (chan: Channel) => {
       setSelectedChannel(chan);
       initializeStream(chan, true);
-
       if (window.innerWidth < 1024 && playerWrapperRef.current) {
         setTimeout(() => {
-          playerWrapperRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
+          playerWrapperRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 100);
       }
     },
@@ -1494,26 +1225,16 @@ export default function IPTVPlayer() {
       }
       return;
     }
-
-    if (playTimeoutRef.current) {
-      clearTimeout(playTimeoutRef.current);
-    }
+    if (playTimeoutRef.current) clearTimeout(playTimeoutRef.current);
 
     playTimeoutRef.current = setTimeout(() => {
-      console.log("Playback failed to start within 10 seconds, switching to next channel...");
-
       setChannels((currentChannels) => {
         if (currentChannels.length <= 1) return currentChannels;
-
-        const currentIndex = currentChannels.findIndex(
-          (c) => c.id === selectedChannel.id || c.url === selectedChannel.url
-        );
+        const currentIndex = currentChannels.findIndex(c => c.id === selectedChannel.id || c.url === selectedChannel.url);
         if (currentIndex !== -1) {
           const nextIndex = (currentIndex + 1) % currentChannels.length;
           const nextChan = currentChannels[nextIndex];
-          setTimeout(() => {
-            handleChannelSelect(nextChan);
-          }, 0);
+          setTimeout(() => handleChannelSelect(nextChan), 0);
         }
         return currentChannels;
       });
@@ -1527,17 +1248,11 @@ export default function IPTVPlayer() {
     };
   }, [selectedChannel, playerStatus, retryKey, handleChannelSelect]);
 
-  const categories = useMemo(() => [
-    "All",
-    ...Array.from(new Set(channels.map((c) => c.group))),
-  ], [channels]);
+  const categories = useMemo(() => ["All", ...Array.from(new Set(channels.map((c) => c.group)))], [channels]);
 
   const filteredChannels = useMemo(() => channels.filter((c) => {
-    const matchesCategory =
-      selectedCategory === "All" || c.group === selectedCategory;
-    const matchesSearch = c.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "All" || c.group === selectedCategory;
+    const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   }), [channels, selectedCategory, searchQuery]);
 
@@ -1545,123 +1260,73 @@ export default function IPTVPlayer() {
   const hasMore = displayCount < filteredChannels.length;
 
   const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase();
+    return name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 pt-4 md:pt-6 min-h-screen pb-12 px-3 sm:px-4 md:px-6 text-white">
+    <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 pt-4 md:pt-6 min-h-screen pb-12 px-3 sm:px-4 md:px-6 text-zinc-900 dark:text-white">
       {error ? (
-        <div className="glass-card p-12 text-center space-y-6 border border-rose-500/20 max-w-2xl mx-auto rounded-3xl bg-rose-500/5">
+        <div className="glass-card p-12 text-center space-y-6 border border-rose-500/20 max-w-2xl mx-auto rounded-3xl bg-rose-500/5 shadow-sm dark:shadow-none">
           <ShieldAlert className="text-rose-500 mx-auto" size={48} />
           <h3 className="text-2xl font-bold">Something went wrong</h3>
-          <p className="text-zinc-300 font-medium">{error}</p>
+          <p className="text-zinc-600 dark:text-zinc-300 font-medium">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-primary hover:bg-primary-dark font-bold rounded-2xl transition-all shadow-lg shadow-primary/20"
+            className="px-6 py-3 bg-primary hover:bg-primary-dark font-bold text-white rounded-2xl transition-all shadow-lg shadow-primary/20"
           >
             Reload Page
           </button>
         </div>
       ) : loading ? (
         <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full items-center animate-pulse">
-          {/* 1. Player Card Skeleton */}
+          {/* Skeleton Loaders */}
           <div className="w-full flex justify-center">
-            <div
-              className="w-full aspect-video max-h-[75vh] rounded-2xl md:rounded-3xl bg-white/[0.01] border border-white/10 sm:border-white/5 flex items-center justify-center"
-              style={{ maxWidth: "calc(75vh * 16 / 9)" }}
-            >
-              <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
-                <Radio size={32} className="text-white/20 animate-pulse" />
+            <div className="w-full aspect-video max-h-[75vh] rounded-2xl md:rounded-3xl bg-zinc-200 dark:bg-white/[0.01] border border-zinc-300 dark:border-white/10 flex items-center justify-center" style={{ maxWidth: "calc(75vh * 16 / 9)" }}>
+              <div className="w-16 h-16 rounded-full bg-zinc-300 dark:bg-white/10 flex items-center justify-center">
+                <Radio size={32} className="text-zinc-400 dark:text-white/20 animate-pulse" />
               </div>
             </div>
           </div>
-
-          {/* 2. Middle Cards Skeletons */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-            {/* Card 1: Channel Details Skeleton */}
-            <div className="glass-card p-4 sm:p-6 border border-white/10 sm:border-white/5 rounded-2xl md:rounded-3xl flex flex-row items-center gap-4 bg-white/[0.01] w-full animate-pulse">
-              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-white/10 border border-white/10 flex-shrink-0" />
-              <div className="space-y-2 flex-1">
-                <div className="h-4 sm:h-5 bg-white/10 rounded w-2/3 animate-pulse" />
-                <div className="h-3.5 bg-white/10 rounded w-1/3 animate-pulse" />
-              </div>
+            <div className="glass-card p-4 sm:p-6 border border-zinc-200 dark:border-white/10 rounded-2xl md:rounded-3xl flex flex-row items-center gap-4 bg-white dark:bg-white/[0.01] w-full shadow-sm dark:shadow-none">
+              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-zinc-200 dark:bg-white/10 border border-zinc-300 dark:border-white/10 flex-shrink-0" />
+              <div className="space-y-2 flex-1"><div className="h-4 sm:h-5 bg-zinc-200 dark:bg-white/10 rounded w-2/3" /><div className="h-3.5 bg-zinc-200 dark:bg-white/10 rounded w-1/3" /></div>
             </div>
-
-            {/* Card 2: Developer Info Skeleton */}
-            <div className="glass-card p-4 sm:p-6 border border-white/10 sm:border-white/5 rounded-2xl md:rounded-3xl flex flex-row items-center justify-between gap-4 bg-white/[0.01] w-full animate-pulse">
-              {/* Left block skeleton */}
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 border border-white/10 flex-shrink-0" />
-                <div className="space-y-2">
-                  <div className="h-4 bg-white/10 rounded w-16 animate-pulse" />
-                  <div className="flex gap-2.5">
-                    <div className="w-4 h-4 bg-white/10 rounded animate-pulse" />
-                    <div className="w-4 h-4 bg-white/10 rounded animate-pulse" />
-                    <div className="w-4 h-4 bg-white/10 rounded animate-pulse" />
-                  </div>
-                </div>
-              </div>
-              {/* Separator skeleton */}
-              <div className="hidden xs:block h-10 w-[1px] bg-white/10 flex-shrink-0" />
-              {/* Right block skeleton */}
-              <div className="space-y-1.5 flex-1 pl-1">
-                <div className="h-2.5 bg-white/10 rounded w-11/12 animate-pulse" />
-                <div className="h-2.5 bg-white/10 rounded w-4/5 animate-pulse" />
-              </div>
+            <div className="glass-card p-4 sm:p-6 border border-zinc-200 dark:border-white/10 rounded-2xl md:rounded-3xl flex flex-row items-center justify-between gap-4 bg-white dark:bg-white/[0.01] w-full shadow-sm dark:shadow-none">
+              <div className="flex items-center gap-3 flex-shrink-0"><div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-zinc-200 dark:bg-white/10 border border-zinc-300 dark:border-white/10 flex-shrink-0" /><div className="space-y-2"><div className="h-4 bg-zinc-200 dark:bg-white/10 rounded w-16" /><div className="flex gap-2.5"><div className="w-4 h-4 bg-zinc-200 dark:bg-white/10 rounded" /><div className="w-4 h-4 bg-zinc-200 dark:bg-white/10 rounded" /><div className="w-4 h-4 bg-zinc-200 dark:bg-white/10 rounded" /></div></div></div>
+              <div className="hidden xs:block h-10 w-[1px] bg-zinc-200 dark:bg-white/10 flex-shrink-0" />
+              <div className="space-y-1.5 flex-1 pl-1"><div className="h-2.5 bg-zinc-200 dark:bg-white/10 rounded w-11/12" /><div className="h-2.5 bg-zinc-200 dark:bg-white/10 rounded w-4/5" /></div>
             </div>
-
-            {/* Card 3: Total Channels Count Skeleton */}
-            <div className="glass-card p-4 sm:p-6 border border-white/10 sm:border-white/5 rounded-2xl md:rounded-3xl flex flex-row items-center gap-4 bg-white/[0.01] w-full animate-pulse">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 border border-white/10 flex-shrink-0" />
-              <div className="space-y-2 flex-1">
-                <div className="h-4 bg-white/10 rounded w-1/3 animate-pulse" />
-                <div className="h-5 bg-white/10 rounded w-1/2 animate-pulse" />
-              </div>
+            <div className="glass-card p-4 sm:p-6 border border-zinc-200 dark:border-white/10 rounded-2xl md:rounded-3xl flex flex-row items-center gap-4 bg-white dark:bg-white/[0.01] w-full shadow-sm dark:shadow-none">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-zinc-200 dark:bg-white/10 border border-zinc-300 dark:border-white/10 flex-shrink-0" />
+              <div className="space-y-2 flex-1"><div className="h-4 bg-zinc-200 dark:bg-white/10 rounded w-1/3" /><div className="h-5 bg-zinc-200 dark:bg-white/10 rounded w-1/2" /></div>
             </div>
           </div>
-
-          {/* 3. Channels List Skeleton Card */}
-          <div className="w-full glass-card p-4 sm:p-6 border border-white/10 sm:border-white/5 rounded-2xl md:rounded-3xl bg-white/[0.01] flex flex-col h-[600px] sm:h-[700px]">
-            {/* Mock Playlist Header & Tab Bar */}
-            <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-white/10 sm:border-white/5 mb-3 sm:mb-4 flex-wrap gap-2 animate-pulse">
-              <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 sm:border-white/5 w-full sm:w-auto gap-2">
-                <div className="h-8 bg-white/10 rounded-lg w-28 sm:w-32" />
-                <div className="h-8 bg-white/5 rounded-lg w-28 sm:w-32" />
+          <div className="w-full glass-card p-4 sm:p-6 border border-zinc-200 dark:border-white/10 rounded-2xl md:rounded-3xl bg-white dark:bg-white/[0.01] shadow-sm dark:shadow-none flex flex-col h-[600px] sm:h-[700px]">
+             <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-zinc-200 dark:border-white/10 mb-3 sm:mb-4 flex-wrap gap-2 animate-pulse">
+              <div className="flex bg-zinc-100 dark:bg-white/5 p-1 rounded-xl border border-zinc-200 dark:border-white/10 w-full sm:w-auto gap-2">
+                <div className="h-8 bg-zinc-200 dark:bg-white/10 rounded-lg w-28 sm:w-32" />
+                <div className="h-8 bg-zinc-100 dark:bg-white/5 rounded-lg w-28 sm:w-32" />
               </div>
-              <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 sm:border-white/5 w-full sm:w-auto gap-2">
-                <div className="h-8 bg-white/5 rounded-lg w-20" />
-                <div className="h-8 bg-white/10 rounded-lg w-32" />
+              <div className="flex bg-zinc-100 dark:bg-white/5 p-1 rounded-xl border border-zinc-200 dark:border-white/10 w-full sm:w-auto gap-2">
+                <div className="h-8 bg-zinc-100 dark:bg-white/5 rounded-lg w-20" />
+                <div className="h-8 bg-zinc-200 dark:bg-white/10 rounded-lg w-32" />
               </div>
             </div>
-
-            {/* Mock Search and Filters */}
-            <div className="space-y-3 sm:space-y-4 pb-3 sm:pb-4 border-b border-white/10 sm:border-white/5 animate-pulse">
-              <div className="h-10 bg-white/5 rounded-xl sm:rounded-2xl w-full" />
+            <div className="space-y-3 sm:space-y-4 pb-3 sm:pb-4 border-b border-zinc-200 dark:border-white/10 animate-pulse">
+              <div className="h-10 bg-zinc-100 dark:bg-white/5 rounded-xl sm:rounded-2xl w-full" />
               <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                 {Array.from({ length: 6 }).map((_, idx) => (
-                  <div key={idx} className="h-8 bg-white/5 rounded-lg sm:rounded-xl w-16 sm:w-20 flex-shrink-0" />
+                  <div key={idx} className="h-8 bg-zinc-100 dark:bg-white/5 rounded-lg sm:rounded-xl w-16 sm:w-20 flex-shrink-0" />
                 ))}
               </div>
             </div>
-
-            {/* Mock Channels Grid */}
             <div className="flex-1 min-h-0 overflow-y-auto pt-3 sm:pt-4 pr-1 custom-scrollbar">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {Array.from({ length: 12 }).map((_, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-white/[0.02] border border-white/10 sm:border-white/5 animate-pulse"
-                  >
-                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/10 flex-shrink-0" />
-                    <div className="flex-1 space-y-1.5 sm:space-y-2">
-                      <div className="h-2.5 sm:h-3 w-1/3 bg-white/10 rounded" />
-                      <div className="h-3.5 sm:h-4 w-2/3 bg-white/10 rounded" />
-                    </div>
+                  <div key={idx} className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-zinc-50 dark:bg-white/[0.02] border border-zinc-200 dark:border-white/10 animate-pulse">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-zinc-200 dark:bg-white/10 flex-shrink-0" />
+                    <div className="flex-1 space-y-1.5 sm:space-y-2"><div className="h-2.5 sm:h-3 w-1/3 bg-zinc-200 dark:bg-white/10 rounded" /><div className="h-3.5 sm:h-4 w-2/3 bg-zinc-200 dark:bg-white/10 rounded" /></div>
                   </div>
                 ))}
               </div>
@@ -1671,150 +1336,65 @@ export default function IPTVPlayer() {
       ) : (
         <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full items-center">
           {/* 1. Player Card */}
-          <div
-            ref={playerWrapperRef}
-            className="w-full flex justify-center"
-          >
+          <div ref={playerWrapperRef} className="w-full flex justify-center">
             <div
               ref={playerContainerRef}
               onMouseMove={handleMouseMove}
               onClick={handlePlayerClick}
               onDoubleClick={handlePlayerDoubleClick}
               className={`bg-black shadow-2xl group transition-[width,height] duration-200 ${isFullscreen
-                ? "relative w-full h-full bg-black"
-                : "relative aspect-video max-h-[75vh] mx-auto rounded-2xl md:rounded-3xl overflow-hidden bg-black border border-white/10 sm:border-white/5 w-full"
-                } ${showControls ? "cursor-default" : "cursor-none"
-                }`}
+                    ? "relative w-full h-full bg-black"
+                    : "relative aspect-video max-h-[75vh] mx-auto rounded-2xl md:rounded-3xl overflow-hidden bg-black border border-zinc-800 dark:border-white/10 w-full"
+                } ${showControls ? "cursor-default" : "cursor-none"}`}
               style={!isFullscreen ? { maxWidth: "calc(75vh * 16 / 9)" } : undefined}
             >
-              <video
-                ref={videoRef}
-                autoPlay
-                muted
-                playsInline
-                className="w-full h-full object-contain bg-black cursor-pointer"
-              />
+              <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-contain bg-black cursor-pointer" />
 
               {/* Tap to Unmute Overlay */}
               {playerStatus === "playing" && isMuted && (
-                <div
-                  className="absolute top-4 right-4 z-30 pointer-events-auto cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleMuteUnmute();
-                  }}
-                >
-                  <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/70 hover:bg-black/90 text-white border border-white/10 shadow-lg backdrop-blur-md"
-                  >
-                    <VolumeX
-                      size={14}
-                      className="text-primary animate-pulse"
-                    />
-                    <span className="text-[10px] sm:text-xs font-bold tracking-wider">
-                      TAP TO UNMUTE
-                    </span>
+                <div className="absolute top-4 right-4 z-30 pointer-events-auto cursor-pointer" onClick={(e) => { e.stopPropagation(); handleMuteUnmute(); }}>
+                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/70 hover:bg-black/90 text-white border border-white/10 shadow-lg backdrop-blur-md">
+                    <VolumeX size={14} className="text-primary animate-pulse" />
+                    <span className="text-[10px] sm:text-xs font-bold tracking-wider">TAP TO UNMUTE</span>
                   </motion.div>
                 </div>
               )}
 
-              {/* Center Play/Pause Button Overlay */}
+              {/* Play/Pause Overlay */}
               {playerStatus === "playing" && (isPaused || showControls) && !isBuffering && (
-                <div
-                  className="absolute inset-0 flex items-center justify-center bg-black/35 z-10 pointer-events-none"
-                >
+                <div className="absolute inset-0 flex items-center justify-center bg-black/35 z-10 pointer-events-none">
                   <AnimatePresence mode="wait">
                     {isPaused ? (
-                      <motion.button
-                        key="play-btn"
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.9, opacity: 0 }}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePlayPause();
-                        }}
-                        className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-primary/95 text-white flex items-center justify-center shadow-lg shadow-primary/30 border border-white/10 pointer-events-auto cursor-pointer focus:outline-none"
-                      >
-                        <Play
-                          size={28}
-                          className="fill-white translate-x-0.5 md:w-8 md:h-8"
-                        />
+                      <motion.button key="play-btn" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} onClick={(e) => { e.stopPropagation(); handlePlayPause(); }} className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-primary/95 text-white flex items-center justify-center shadow-lg shadow-primary/30 border border-white/10 pointer-events-auto cursor-pointer focus:outline-none">
+                        <Play size={28} className="fill-white translate-x-0.5 md:w-8 md:h-8" />
                       </motion.button>
                     ) : (
-                      <motion.button
-                        key="pause-btn"
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.9, opacity: 0 }}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePlayPause();
-                        }}
-                        className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-primary/95 text-white flex items-center justify-center shadow-lg shadow-primary/30 border border-white/10 pointer-events-auto cursor-pointer focus:outline-none"
-                      >
-                        <Pause
-                          size={28}
-                          className="fill-white md:w-8 md:h-8"
-                        />
+                      <motion.button key="pause-btn" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} onClick={(e) => { e.stopPropagation(); handlePlayPause(); }} className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-primary/95 text-white flex items-center justify-center shadow-lg shadow-primary/30 border border-white/10 pointer-events-auto cursor-pointer focus:outline-none">
+                        <Pause size={28} className="fill-white md:w-8 md:h-8" />
                       </motion.button>
                     )}
                   </AnimatePresence>
                 </div>
               )}
 
-              {/* YouTube-like Double Click Seek Visual Ripple Overlay */}
+              {/* Seek Indicators */}
               <AnimatePresence>
                 {activeSeekIndicator.visible && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className={`absolute inset-y-0 w-1/3 flex items-center justify-center pointer-events-none z-30 bg-white/5 ${activeSeekIndicator.side === "left"
-                      ? "left-0 rounded-r-full"
-                      : "right-0 rounded-l-full"
-                      }`}
-                  >
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className={`absolute inset-y-0 w-1/3 flex items-center justify-center pointer-events-none z-30 bg-white/5 ${activeSeekIndicator.side === "left" ? "left-0 rounded-r-full" : "right-0 rounded-l-full"}`}>
                     {activeSeekIndicator.side === "left" ? (
-                      <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1.1, opacity: 1 }}
-                        exit={{ scale: 0.8, opacity: 0 }}
-                        className="flex flex-col items-center gap-1 text-white bg-black/60 px-4 py-3 rounded-full backdrop-blur-md border border-white/10"
-                      >
-                        <ChevronsLeft className="h-6 w-6 text-primary animate-pulse" />
-                        <span className="text-xs font-black tracking-widest">
-                          -10s
-                        </span>
+                      <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1.1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="flex flex-col items-center gap-1 text-white bg-black/60 px-4 py-3 rounded-full backdrop-blur-md border border-white/10">
+                        <ChevronsLeft className="h-6 w-6 text-primary animate-pulse" /><span className="text-xs font-black tracking-widest">-10s</span>
                       </motion.div>
                     ) : (
-                      <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1.1, opacity: 1 }}
-                        exit={{ scale: 0.8, opacity: 0 }}
-                        className="flex flex-col items-center gap-1 text-white bg-black/60 px-4 py-3 rounded-full backdrop-blur-md border border-white/10"
-                      >
-                        <ChevronsRight className="h-6 w-6 text-primary animate-pulse" />
-                        <span className="text-xs font-black tracking-widest">
-                          +10s
-                        </span>
+                      <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1.1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="flex flex-col items-center gap-1 text-white bg-black/60 px-4 py-3 rounded-full backdrop-blur-md border border-white/10">
+                        <ChevronsRight className="h-6 w-6 text-primary animate-pulse" /><span className="text-xs font-black tracking-widest">+10s</span>
                       </motion.div>
                     )}
                   </motion.div>
                 )}
               </AnimatePresence>
 
-
-              {/* Loader Overlay */}
+              {/* Loader */}
               {(playerStatus === "loading" || (isBuffering && !isPaused)) && (
                 <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-4 z-10">
                   <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin" />
@@ -1824,39 +1404,25 @@ export default function IPTVPlayer() {
                 </div>
               )}
 
-              {/* Error/Offline Overlay */}
+              {/* Error */}
               {playerStatus === "error" && (() => {
                 const { title, desc } = getFriendlyErrorMessage(playerError || "");
                 return (
-                  <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center gap-3.5 z-10 px-6 text-center font-sans">
+                  <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center gap-3.5 z-10 px-6 text-center font-sans text-white">
                     <ShieldAlert className="text-rose-500 animate-pulse" size={40} />
-                    <span className="text-base font-bold text-white tracking-tight">
-                      {title}
-                    </span>
+                    <span className="text-base font-bold tracking-tight">{title}</span>
                     {playerError && (
                       <span className="text-[10px] sm:text-xs text-rose-400 font-mono bg-rose-500/10 border border-rose-500/10 px-3 py-1.5 rounded-xl max-w-md break-words select-all">
                         {playerError}
                       </span>
                     )}
-                    <span className="text-xs text-zinc-400 max-w-md leading-relaxed font-medium">
-                      {desc}
-                    </span>
+                    <span className="text-xs text-zinc-400 max-w-md leading-relaxed font-medium">{desc}</span>
                     <div className="flex gap-2.5 mt-2 flex-wrap justify-center">
-                      <button
-                        onClick={handleReload}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-xs font-bold rounded-xl border border-white/10 transition-colors cursor-pointer text-white"
-                      >
-                        <RefreshCw size={12} />
-                        <span>Try Reconnecting</span>
+                      <button onClick={handleReload} className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-xs font-bold rounded-xl border border-white/10 transition-colors cursor-pointer text-white">
+                        <RefreshCw size={12} /><span>Try Reconnecting</span>
                       </button>
-                      <a
-                        href="https://t.me/SHAJON"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-xs font-bold rounded-xl transition-all shadow-md shadow-primary/20 cursor-pointer text-white no-underline"
-                      >
-                        <FaTelegram size={12} />
-                        <span>Contact Developer</span>
+                      <a href="https://t.me/SHAJON" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-xs font-bold rounded-xl transition-all shadow-md shadow-primary/20 cursor-pointer text-white no-underline">
+                        <FaTelegram size={12} /><span>Contact Developer</span>
                       </a>
                     </div>
                   </div>
@@ -1865,100 +1431,36 @@ export default function IPTVPlayer() {
 
               {/* Idle Overlay */}
               {playerStatus === "idle" && (
-                <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-4 z-10">
-                  <Radio
-                    size={40}
-                    className="text-zinc-500 animate-pulse"
-                  />
-                  <span className="text-sm text-zinc-300 font-medium">
-                    Select a channel to play
-                  </span>
+                <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-4 z-10 text-white">
+                  <Radio size={40} className="text-zinc-500 animate-pulse" />
+                  <span className="text-sm text-zinc-300 font-medium">Select a channel to play</span>
                 </div>
               )}
 
-              {/* Custom Controls Overlay */}
+              {/* Player Controls */}
               {playerStatus === "playing" && (
-                <div
-                  className={`player-controls absolute bottom-0 left-0 right-0 p-3 sm:p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-between transition-all duration-300 z-20 ${showControls
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-2 pointer-events-none"
-                    }`}
-                >
-                  {/* Left controls */}
+                <div className={`player-controls absolute bottom-0 left-0 right-0 p-3 sm:p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-between transition-all duration-300 z-20 text-white ${showControls ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"}`}>
                   <div className="flex items-center gap-3">
-                    <button
-                      onClick={handlePlayPause}
-                      className="p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors"
-                    >
-                      {isPaused ? (
-                        <Play size={18} className="fill-white" />
-                      ) : (
-                        <Pause size={18} className="fill-white" />
-                      )}
+                    <button onClick={handlePlayPause} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+                      {isPaused ? <Play size={18} className="fill-white" /> : <Pause size={18} className="fill-white" />}
                     </button>
                     <div className="flex items-center gap-1.5 group/volume">
-                      <button
-                        onClick={handleMuteUnmute}
-                        className="p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors"
-                      >
-                        {isMuted || volume === 0 ? (
-                          <VolumeX size={18} />
-                        ) : (
-                          <Volume2 size={18} />
-                        )}
+                      <button onClick={handleMuteUnmute} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+                        {isMuted || volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
                       </button>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={isMuted ? 0 : volume}
-                        onChange={handleVolumeChangeSlider}
-                        className="w-16 sm:w-20 h-1.5 rounded-lg appearance-none cursor-pointer outline-none transition-all [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:shadow-md"
-                        style={{
-                          background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${(isMuted ? 0 : volume) * 100
-                            }%, rgba(255, 255, 255, 0.25) ${(isMuted ? 0 : volume) * 100
-                            }%, rgba(255, 255, 255, 0.25) 100%)`,
-                        }}
-                      />
+                      <input type="range" min="0" max="1" step="0.05" value={isMuted ? 0 : volume} onChange={handleVolumeChangeSlider} className="w-16 sm:w-20 h-1.5 rounded-lg appearance-none cursor-pointer outline-none transition-all [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:shadow-md" style={{ background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${(isMuted ? 0 : volume) * 100}%, rgba(255, 255, 255, 0.25) ${(isMuted ? 0 : volume) * 100}%, rgba(255, 255, 255, 0.25) 100%)` }} />
                     </div>
                   </div>
-
-                  {/* Center LIVE badge */}
-                  <div className="flex items-center gap-1 bg-rose-600/90 text-white font-bold text-[9px] tracking-wider uppercase px-2 py-0.5 rounded border border-rose-500/30 animate-pulse select-none">
-                    <span className="h-1.5 w-1.5 rounded-full bg-white"></span>
-                    <span>LIVE</span>
+                  <div className="flex items-center gap-1 bg-rose-600/90 font-bold text-[9px] tracking-wider uppercase px-2 py-0.5 rounded border border-rose-500/30 animate-pulse select-none">
+                    <span className="h-1.5 w-1.5 rounded-full bg-white"></span><span>LIVE</span>
                   </div>
-
-                  {/* Right controls */}
                   <div className="flex items-center gap-2">
                     {isPipSupported && (
-                      <button
-                        onClick={handlePip}
-                        className={`p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors ${isPip ? "text-primary bg-white/10" : ""
-                          }`}
-                        title="Picture in Picture"
-                      >
-                        <PictureInPicture size={18} />
-                      </button>
+                      <button onClick={handlePip} className={`p-1.5 rounded-lg hover:bg-white/10 transition-colors ${isPip ? "text-primary bg-white/10" : ""}`} title="Picture in Picture"><PictureInPicture size={18} /></button>
                     )}
-                    <button
-                      onClick={handleReload}
-                      className="p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors"
-                      title="Reload Stream"
-                    >
-                      <RotateCw size={18} />
-                    </button>
-
-                    <button
-                      onClick={handleFullscreen}
-                      className="p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors"
-                    >
-                      {isFullscreen ? (
-                        <Minimize size={18} />
-                      ) : (
-                        <Maximize size={18} />
-                      )}
+                    <button onClick={handleReload} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors" title="Reload Stream"><RotateCw size={18} /></button>
+                    <button onClick={handleFullscreen} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+                      {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
                     </button>
                   </div>
                 </div>
@@ -1968,142 +1470,84 @@ export default function IPTVPlayer() {
 
           {/* 2. Grid for Channel Details & Channel Count Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-            {/* Channel Details Card / Skeleton */}
+            {/* Channel Details Card */}
             {selectedChannel ? (
-              <motion.div
-                key={selectedChannel.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`md:col-span-1 glass-card p-4 sm:p-6 border border-white/10 sm:border-white/5 rounded-2xl md:rounded-3xl flex flex-row items-center justify-start gap-4 text-left bg-white/[0.01] w-full ${playerStatus === "loading" ? "animate-pulse" : ""
-                  }`}
-              >
+              <motion.div key={selectedChannel.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`md:col-span-1 glass-card p-4 sm:p-6 border border-zinc-200 dark:border-white/10 rounded-2xl md:rounded-3xl flex flex-row items-center justify-start gap-4 text-left bg-white dark:bg-white/[0.01] shadow-sm dark:shadow-none w-full ${playerStatus === "loading" ? "animate-pulse" : ""}`}>
                 {selectedChannel.logo ? (
-                  <Image
-                    src={selectedChannel.logo}
-                    alt={selectedChannel.name}
-                    width={56}
-                    height={56}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLElement).style.display = "none";
-                    }}
-                    className="w-10 h-10 sm:w-14 sm:h-14 object-contain rounded-xl sm:rounded-2xl bg-white/5 p-0.5 sm:p-1 border border-white/10 flex-shrink-0"
-                  />
+                  <Image src={selectedChannel.logo} alt={selectedChannel.name} width={56} height={56} onError={(e) => { (e.currentTarget as HTMLElement).style.display = "none"; }} className="w-10 h-10 sm:w-14 sm:h-14 object-contain rounded-xl sm:rounded-2xl bg-zinc-100 dark:bg-white/5 p-0.5 sm:p-1 border border-zinc-200 dark:border-white/10 flex-shrink-0" />
                 ) : (
-                  <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-primary/30 to-violet-500/30 flex items-center justify-center font-bold text-sm sm:text-base text-primary border border-primary/20 flex-shrink-0">
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-primary/10 to-violet-500/10 dark:from-primary/30 dark:to-violet-500/30 flex items-center justify-center font-bold text-sm sm:text-base text-primary border border-primary/20 flex-shrink-0">
                     {getInitials(selectedChannel.name)}
                   </div>
                 )}
                 <div className="space-y-1 min-w-0">
-                  <h2 className="text-base sm:text-lg md:text-xl font-bold truncate">
-                    {selectedChannel.name}
-                  </h2>
+                  <h2 className="text-base sm:text-lg md:text-xl font-bold truncate text-zinc-900 dark:text-white">{selectedChannel.name}</h2>
                   <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-widest text-primary bg-primary/10 px-1.5 sm:px-2 py-0.5 rounded border border-primary/20 block w-fit">
                     {selectedChannel.group}
                   </span>
                 </div>
               </motion.div>
             ) : (
-              <div className="md:col-span-1 glass-card p-4 sm:p-6 border border-white/10 sm:border-white/5 rounded-2xl md:rounded-3xl flex flex-row items-center justify-start gap-4 text-left bg-white/[0.01] w-full">
+              <div className="md:col-span-1 glass-card p-4 sm:p-6 border border-zinc-200 dark:border-white/10 rounded-2xl md:rounded-3xl flex flex-row items-center justify-start gap-4 text-left bg-white dark:bg-white/[0.01] shadow-sm dark:shadow-none w-full">
                 <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-primary/10 border border-primary/20 flex-shrink-0 flex items-center justify-center">
                   <Tv size={20} className="text-primary" />
                 </div>
                 <div className="space-y-1 min-w-0">
-                  <h2 className="text-base sm:text-lg font-bold text-gray-300">Select a Channel</h2>
-                  <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-widest text-zinc-400">Choose from the list below</span>
+                  <h2 className="text-base sm:text-lg font-bold text-zinc-800 dark:text-gray-300">Select a Channel</h2>
+                  <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-widest text-zinc-500 dark:text-zinc-400">Choose from the list below</span>
                 </div>
               </div>
             )}
 
-            {/* Developer Info Card */}
-            <div className="glass-card p-4 sm:p-6 border border-white/10 sm:border-white/5 rounded-2xl md:rounded-3xl flex flex-row items-center justify-between gap-4 text-left bg-white/[0.01] w-full md:col-span-1">
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <div className="relative">
-                  <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border border-white/15 shadow-md">
-                    <Image
-                      src="https://avatars.githubusercontent.com/u/171383675?v=4"
-                      alt="S. SHAJON"
-                      width={48}
-                      height={48}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#070414] z-10 animate-pulse" />
+            {/* Developer Info Card (Modified Version) */}
+            <div className="glass-card p-4 sm:p-5 border border-zinc-200 dark:border-white/10 rounded-2xl md:rounded-3xl flex flex-col justify-between gap-3 text-left bg-white dark:bg-white/[0.01] shadow-sm dark:shadow-none w-full md:col-span-1">
+              {/* Left/Top: Your Info */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 flex items-center justify-center text-primary font-bold shadow-sm dark:shadow-lg">
+                  MF
                 </div>
                 <div className="flex flex-col">
-                  <h3 className="text-base sm:text-lg font-black text-white leading-tight">
-                    S. SHAJON
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-primary">Modified By</span>
+                  <h3 className="text-sm sm:text-base font-black text-zinc-900 dark:text-white leading-tight">
+                    MD SHAMSUZZAMAN FAHIM
                   </h3>
-                  <div className="flex items-center gap-3 mt-1.5">
-                    <a
-                      href="https://github.com/SHAJON-404"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-zinc-300 hover:text-white transition-colors"
-                      title="GitHub"
-                    >
-                      <FaGithub size={18} />
-                    </a>
-                    <a
-                      href="https://t.me/SHAJON"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-zinc-300 hover:text-[#26A5E4] transition-colors"
-                      title="Telegram"
-                    >
-                      <FaTelegram size={18} />
-                    </a>
-                    <a
-                      href="https://www.facebook.com/shahmakhdumshajonofficial"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-zinc-300 hover:text-[#1877F2] transition-colors"
-                      title="Facebook"
-                    >
-                      <FaFacebook size={18} />
-                    </a>
-                    <a
-                      href="https://youtube.com/@SHAJON-404"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-zinc-300 hover:text-[#FF0000] transition-colors"
-                      title="YouTube"
-                    >
-                      <FaYoutube size={18} />
-                    </a>
-                  </div>
                 </div>
               </div>
-
-              <div className="hidden xs:block h-10 w-[1px] bg-white/10 flex-shrink-0" />
-
-              <p className="text-[10px] sm:text-[10.5px] leading-normal text-zinc-400 font-medium select-text flex-1 pl-1 min-w-[120px]">
-                For any support, contact via <a href="https://t.me/SHAJON" target="_blank" rel="noopener noreferrer" className="text-[#26A5E4] font-bold hover:underline">Telegram only</a>. Follow GitHub for updates!
-              </p>
+              <div className="w-full h-[1px] bg-zinc-200 dark:bg-white/10 my-1" />
+              {/* Right/Bottom: Original Developer */}
+              <div className="flex flex-col items-end gap-1 w-full text-right">
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] text-zinc-500 dark:text-zinc-400">Orig. Dev: <span className="text-zinc-700 dark:text-zinc-300 font-bold">S. SHAJON</span></span>
+                  <div className="flex items-center gap-1.5">
+                    <a href="https://github.com/SHAJON-404" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"><FaGithub size={11} /></a>
+                    <a href="https://t.me/SHAJON" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-[#26A5E4] transition-colors"><FaTelegram size={11} /></a>
+                  </div>
+                </div>
+                <p className="text-[8px] sm:text-[8px] text-zinc-500 font-medium">
+                  For any support, contact via <a href="https://t.me/SHAJON" target="_blank" rel="noopener noreferrer" className="text-[#26A5E4] hover:underline">Telegram</a> only. Follow GitHub for updates!
+                </p>
+              </div>
             </div>
 
             {/* Channel Count Card */}
-            <div className="glass-card p-4 sm:p-6 border border-white/10 sm:border-white/5 rounded-2xl md:rounded-3xl flex flex-row items-center justify-start gap-4 text-left bg-white/[0.01] w-full md:col-span-1">
+            <div className="glass-card p-4 sm:p-6 border border-zinc-200 dark:border-white/10 rounded-2xl md:rounded-3xl flex flex-row items-center justify-start gap-4 text-left bg-white dark:bg-white/[0.01] shadow-sm dark:shadow-none w-full md:col-span-1">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary flex-shrink-0">
                 <Tv size={20} className="animate-pulse" />
               </div>
               <div className="space-y-0.5 min-w-0">
-                <p className="text-[9px] sm:text-[10px] uppercase font-bold tracking-widest text-zinc-400 truncate">
-                  Total Channels
-                </p>
-                <h3 className="text-base sm:text-lg font-bold text-emerald-400 truncate">
-                  {channels.length} Channels
-                </h3>
+                <p className="text-[9px] sm:text-[10px] uppercase font-bold tracking-widest text-zinc-500 dark:text-zinc-400 truncate">Total Channels</p>
+                <h3 className="text-base sm:text-lg font-bold text-emerald-500 dark:text-emerald-400 truncate">{channels.length} Channels</h3>
               </div>
             </div>
           </div>
 
           {/* 3. Main Content Area: Sidebar + Channel List */}
           <div className="flex flex-col lg:flex-row gap-6 w-full">
-
+            
             {/* Sidebar: Your Playlists */}
-            <div className="w-full lg:w-1/3 xl:w-1/4 glass-card p-4 sm:p-6 border border-white/10 sm:border-white/5 rounded-2xl md:rounded-3xl bg-white/[0.01] flex flex-col max-h-[280px] lg:max-h-none lg:h-[600px] xl:h-[700px]">
-              <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-white/10 sm:border-white/5 mb-3 sm:mb-4">
-                <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/10 sm:border-white/5 w-full">
+            <div className="w-full lg:w-1/3 xl:w-1/4 glass-card p-4 sm:p-6 border border-zinc-200 dark:border-white/10 rounded-2xl md:rounded-3xl bg-white dark:bg-white/[0.01] shadow-sm dark:shadow-none flex flex-col max-h-[280px] lg:max-h-none lg:h-[600px] xl:h-[700px]">
+              <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-zinc-200 dark:border-white/10 mb-3 sm:mb-4">
+                <div className="flex items-center bg-zinc-100 dark:bg-white/5 p-1 rounded-xl border border-zinc-200 dark:border-white/10 w-full">
                   <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold w-full bg-primary text-white shadow-lg shadow-primary/20 cursor-default">
                     <List size={14} />
                     <span className="whitespace-nowrap">Your Playlists</span>
@@ -2116,54 +1560,32 @@ export default function IPTVPlayer() {
                   return (
                     <div
                       key={pl.id}
-                      onClick={() => {
-                        setActivePlaylistId(pl.id);
-                        setPlaylistTab("browse");
-                      }}
+                      onClick={() => { setActivePlaylistId(pl.id); setPlaylistTab("browse"); }}
                       className={`flex items-center justify-between p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all cursor-pointer group/item ${isActive
-                        ? "bg-primary/10 border-primary text-primary shadow-lg shadow-primary/5"
-                        : "bg-white/[0.02] border-white/10 sm:border-white/5 text-white hover:bg-white/[0.05] hover:border-white/10"
+                          ? "bg-primary/10 border-primary text-primary shadow-lg shadow-primary/5"
+                          : "bg-zinc-50 dark:bg-white/[0.02] border-zinc-200 dark:border-white/10 text-zinc-800 dark:text-white hover:bg-zinc-100 dark:hover:bg-white/[0.05] hover:border-zinc-300 dark:hover:border-white/10"
                         }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className={`p-2 sm:p-2.5 rounded-lg sm:rounded-xl border flex-shrink-0 ${isActive ? "bg-primary/20 border-primary/20" : "bg-white/5 border-white/10"
-                          }`}>
-                          {pl.type === "default" ? (
-                            <Tv size={14} className="sm:w-4 sm:h-4" />
-                          ) : pl.type === "url" ? (
-                            <Link size={14} className="sm:w-4 sm:h-4" />
-                          ) : (
-                            <FileText size={14} className="sm:w-4 sm:h-4" />
-                          )}
+                        <div className={`p-2 sm:p-2.5 rounded-lg sm:rounded-xl border flex-shrink-0 ${isActive ? "bg-primary/20 border-primary/20" : "bg-zinc-200 dark:bg-white/5 border-zinc-300 dark:border-white/10"}`}>
+                          {pl.type === "default" ? <Tv size={14} className="sm:w-4 sm:h-4" /> : pl.type === "url" ? <Link size={14} className="sm:w-4 sm:h-4" /> : <FileText size={14} className="sm:w-4 sm:h-4" />}
                         </div>
-
                         <div className="min-w-0">
                           <h5 className="font-bold text-xs sm:text-sm truncate pr-2">{pl.name}</h5>
-                          <p className="text-[9px] sm:text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">
-                            {pl.channels.length} Channels
-                          </p>
+                          <p className={`text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider ${isActive ? "text-primary/80" : "text-zinc-500 dark:text-zinc-400"}`}>{pl.channels.length} Channels</p>
                         </div>
                       </div>
-
                       <div className="flex items-center gap-1.5 sm:gap-2">
                         {isActive && (
-                          <span className="p-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          <span className="p-1 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                             <Check size={10} className="sm:w-3 sm:h-3 stroke-[3]" />
                           </span>
                         )}
-                        {pl.type !== "default" &&
-                          pl.id !== "default" &&
-                          pl.id !== "sports" &&
-                          pl.id !== "universal" &&
-                          pl.id !== "bangla" && (
-                            <button
-                              onClick={(e) => handleDeletePlaylist(pl.id, e)}
-                              className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all opacity-100 lg:opacity-0 lg:group-hover/item:opacity-100 focus:opacity-100 cursor-pointer"
-                              title="Delete Playlist"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          )}
+                        {pl.type !== "default" && pl.id !== "default" && pl.id !== "sports" && pl.id !== "universal" && pl.id !== "bangla" && (
+                          <button onClick={(e) => handleDeletePlaylist(pl.id, e)} className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all opacity-100 lg:opacity-0 lg:group-hover/item:opacity-100 focus:opacity-100 cursor-pointer" title="Delete Playlist">
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -2172,337 +1594,233 @@ export default function IPTVPlayer() {
             </div>
 
             {/* Channel List Card */}
-            <div className="w-full lg:w-2/3 xl:w-3/4 glass-card p-4 sm:p-6 border border-white/10 sm:border-white/5 rounded-2xl md:rounded-3xl bg-white/[0.01] flex flex-col h-[600px] sm:h-[700px]">
-              {/* Playlist Header & Tab Bar */}
-              <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-white/10 sm:border-white/5 mb-3 sm:mb-4 flex-wrap gap-2">
-                <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/10 sm:border-white/5 w-full sm:w-auto">
-                  <button
-                    onClick={() => setPlaylistTab("browse")}
-                    className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex-1 sm:flex-initial ${playlistTab === "browse"
+            <div className="w-full lg:w-2/3 xl:w-3/4 glass-card p-4 sm:p-6 border border-zinc-200 dark:border-white/10 rounded-2xl md:rounded-3xl bg-white dark:bg-white/[0.01] shadow-sm dark:shadow-none flex flex-col h-[600px] sm:h-[700px]">
+            {/* Playlist Header & Tab Bar */}
+            <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-zinc-200 dark:border-white/10 mb-3 sm:mb-4 flex-wrap gap-2">
+              <div className="flex items-center bg-zinc-100 dark:bg-white/5 p-1 rounded-xl border border-zinc-200 dark:border-white/10 w-full sm:w-auto">
+                <button
+                  onClick={() => setPlaylistTab("browse")}
+                  className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex-1 sm:flex-initial ${playlistTab === "browse"
                       ? "bg-primary text-white shadow-lg shadow-primary/20"
-                      : "text-zinc-300 hover:text-white"
-                      }`}
-                  >
-                    <Tv size={14} />
-                    <span className="whitespace-nowrap">Browse Channels</span>
-                  </button>
-                  <button
-                    onClick={() => setPlaylistTab("manage")}
-                    className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex-1 sm:flex-initial ${playlistTab === "manage"
+                      : "text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-transparent"
+                    }`}
+                >
+                  <Tv size={14} />
+                  <span className="whitespace-nowrap">Browse Channels</span>
+                </button>
+                <button
+                  onClick={() => setPlaylistTab("manage")}
+                  className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex-1 sm:flex-initial ${playlistTab === "manage"
                       ? "bg-primary text-white shadow-lg shadow-primary/20"
-                      : "text-zinc-300 hover:text-white"
-                      }`}
-                  >
-                    <Upload size={14} />
-                    <span className="whitespace-nowrap">Playlists Manager</span>
-                  </button>
-                </div>
-
-                {/* Display active playlist name & watcher count */}
-                <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/10 sm:border-white/5 w-full sm:w-auto justify-between sm:justify-start">
-                  {viewerCount !== null && (
-                    <>
-                      <div className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 rounded-lg text-[10px] sm:text-xs text-zinc-300 select-none">
-                        <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse shrink-0" />
-                        <span className="text-white font-bold whitespace-nowrap">
-                          {viewerCount} {viewerCount === 1 ? "Watcher" : "Watchers"}
-                        </span>
-                      </div>
-                      <div className="hidden sm:block h-4 w-[1px] bg-white/10 mx-1 flex-shrink-0" />
-                    </>
-                  )}
-
-                  <div className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 rounded-lg text-[10px] sm:text-xs text-zinc-300 select-none max-w-[180px] sm:max-w-[260px] truncate">
-                    <span className="font-semibold shrink-0">Playlist:</span>
-                    <span className="text-white font-bold truncate">
-                      {playlists.find((p) => p.id === activePlaylistId)?.name}
-                    </span>
-                  </div>
-                </div>
+                      : "text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-transparent"
+                    }`}
+                >
+                  <Upload size={14} />
+                  <span className="whitespace-nowrap">Playlists Manager</span>
+                </button>
               </div>
 
-              {playlistTab === "browse" ? (
-                <>
-                  {/* Search and Filters */}
-                  <div className="space-y-3 sm:space-y-4 pb-3 sm:pb-4 border-b border-white/10 sm:border-white/5">
-                    <div className="relative flex items-center bg-white/5 border border-white/10 sm:border-white/5 focus-within:border-primary/50 rounded-xl sm:rounded-2xl p-1 transition-colors">
-                      <Search className="text-zinc-400 ml-2.5 sm:ml-3" size={15} />
-                      <input
-                        type="text"
-                        placeholder="Search live TV..."
-                        value={searchQuery}
-                        onChange={(e) => { setSearchQuery(e.target.value); setDisplayCount(80); }}
-                        className="flex-1 bg-transparent border-none outline-none py-1.5 sm:py-2 px-2.5 sm:px-3 text-sm text-white placeholder:text-zinc-400"
-                      />
-                      {searchQuery && (
-                        <button
-                          onClick={() => {
-                            setSearchQuery("");
-                            setDisplayCount(80);
-                          }}
-                          className="p-1 mr-1.5 sm:mr-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                          title="Clear Search"
-                        >
-                          <X size={14} />
-                        </button>
-                      )}
+              {/* Display active playlist name & watcher count */}
+              <div className="flex items-center bg-zinc-100 dark:bg-white/5 p-1 rounded-xl border border-zinc-200 dark:border-white/10 w-full sm:w-auto justify-between sm:justify-start">
+                {viewerCount !== null && (
+                  <>
+                    <div className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 rounded-lg text-[10px] sm:text-xs text-zinc-600 dark:text-zinc-300 select-none">
+                      <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse shrink-0" />
+                      <span className="text-zinc-900 dark:text-white font-bold whitespace-nowrap">
+                        {viewerCount} {viewerCount === 1 ? "Watcher" : "Watchers"}
+                      </span>
                     </div>
+                    <div className="hidden sm:block h-4 w-[1px] bg-zinc-300 dark:bg-white/10 mx-1 flex-shrink-0" />
+                  </>
+                )}
 
-                    {/* Categories horizontally scrollable */}
-                    <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 no-scrollbar">
-                      {categories.map((cat) => (
-                        <button
-                          key={cat}
-                          onClick={() => { setSelectedCategory(cat); setDisplayCount(80); }}
-                          className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold whitespace-nowrap border transition-all ${selectedCategory === cat
-                            ? "bg-primary border-primary text-white shadow-lg shadow-primary/20"
-                            : "bg-white/5 border-white/10 sm:border-white/5 text-zinc-300 hover:text-white hover:bg-white/10"
-                            }`}
-                        >
-                          {cat}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                <div className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 rounded-lg text-[10px] sm:text-xs text-zinc-600 dark:text-zinc-300 select-none max-w-[180px] sm:max-w-[260px] truncate">
+                  <span className="font-semibold shrink-0">Playlist:</span>
+                  <span className="text-zinc-900 dark:text-white font-bold truncate">
+                    {playlists.find((p) => p.id === activePlaylistId)?.name}
+                  </span>
+                </div>
+              </div>
+            </div>
 
-                  {/* List styled as a responsive grid */}
-                  <div className="flex-1 min-h-0 overflow-y-auto pt-3 sm:pt-4 pr-1 custom-scrollbar">
-                    {loading ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                        {Array.from({ length: 12 }).map((_, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-white/[0.02] border border-white/10 sm:border-white/5 animate-pulse"
-                          >
-                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/10" />
-                            <div className="flex-1 space-y-1.5 sm:space-y-2">
-                              <div className="h-2.5 sm:h-3 w-1/3 bg-white/10 rounded" />
-                              <div className="h-3.5 sm:h-4 w-2/3 bg-white/10 rounded" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : filteredChannels.length === 0 ? (
-                      <div className="text-center py-12 text-zinc-400 text-sm font-medium">
-                        No channels found match your filters.
-                      </div>
-                    ) : (
-                      <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                          {visibleChannels.map((chan) => {
-                            const isSelected = selectedChannel?.id === chan.id;
-                            return (
-                              <button
-                                key={chan.id}
-                                onClick={() => handleChannelSelect(chan)}
-                                className={`w-full flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-left transition-all group ${isSelected
-                                  ? "bg-primary/10 border-primary text-primary"
-                                  : "bg-white/[0.02] border-white/10 sm:border-white/5 text-white hover:bg-white/[0.05] hover:border-white/10"
-                                  }`}
-                              >
-                                {chan.logo ? (
-                                  <Image
-                                    src={chan.logo}
-                                    alt={chan.name}
-                                    width={40}
-                                    height={40}
-                                    onError={(e) => {
-                                      (e.currentTarget as HTMLElement).style.display = "none";
-                                    }}
-                                    className="w-9 h-9 sm:w-10 sm:h-10 object-contain rounded-lg sm:rounded-xl bg-white/5 p-0.5 border border-white/10 group-hover:scale-105 transition-transform"
-                                  />
-                                ) : (
-                                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-tr from-white/5 to-white/10 flex items-center justify-center font-bold text-xs border border-white/10 text-zinc-300 group-hover:text-white transition-colors">
-                                    {getInitials(chan.name)}
-                                  </div>
-                                )}
-
-                                <div className="flex-1 min-w-0">
-                                  <p
-                                    className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider ${isSelected ? "text-primary/75" : "text-zinc-400"
-                                      }`}
-                                  >
-                                    {chan.group}
-                                  </p>
-                                  <p className="text-[13px] sm:text-sm font-bold truncate">
-                                    {chan.name}
-                                  </p>
-                                </div>
-
-                                {isSelected && (
-                                  <Play
-                                    size={13}
-                                    className="sm:w-3.5 sm:h-3.5 fill-primary text-primary animate-pulse"
-                                  />
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        {/* Load More Button */}
-                        {hasMore && (
-                          <div className="flex justify-center pt-4 pb-2">
-                            <button
-                              onClick={() => setDisplayCount(prev => prev + 80)}
-                              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs sm:text-sm font-bold text-zinc-300 hover:text-white hover:bg-white/[0.08] hover:border-white/10 transition-all active:scale-95"
-                            >
-                              <ChevronsRight size={14} className="rotate-90" />
-                              <span>Load More ({filteredChannels.length - displayCount} remaining)</span>
-                            </button>
-                          </div>
-                        )}
-                      </>
+            {playlistTab === "browse" ? (
+              <>
+                {/* Search and Filters */}
+                <div className="space-y-3 sm:space-y-4 pb-3 sm:pb-4 border-b border-zinc-200 dark:border-white/10">
+                  <div className="relative flex items-center bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 focus-within:border-primary/50 rounded-xl sm:rounded-2xl p-1 transition-colors">
+                    <Search className="text-zinc-400 ml-2.5 sm:ml-3" size={15} />
+                    <input
+                      type="text"
+                      placeholder="Search live TV..."
+                      value={searchQuery}
+                      onChange={(e) => { setSearchQuery(e.target.value); setDisplayCount(80); }}
+                      className="flex-1 bg-transparent border-none outline-none py-1.5 sm:py-2 px-2.5 sm:px-3 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => { setSearchQuery(""); setDisplayCount(80); }}
+                        className="p-1 mr-1.5 sm:mr-2 rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                        title="Clear Search"
+                      >
+                        <X size={14} />
+                      </button>
                     )}
                   </div>
-                </>
-              ) : (
-                <div className="flex-1 overflow-y-auto pr-1 space-y-6 custom-scrollbar text-left">
-                  {/* Import Playlist Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* URL Import Box */}
-                    <form onSubmit={handleUrlImport} className="glass-card p-4 sm:p-5 border border-white/10 sm:border-white/5 rounded-2xl bg-white/[0.01] flex flex-col justify-between min-h-[180px] hover:border-primary/20 transition-colors">
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                            <Link size={18} />
-                          </div>
-                          <h4 className="font-bold text-sm sm:text-base">Load from URL</h4>
-                        </div>
 
-                        <div className="space-y-2">
-                          <input
-                            type="text"
-                            placeholder="Playlist Name (e.g. My IPTV)"
-                            value={playlistName}
-                            onChange={(e) => setPlaylistName(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 sm:border-white/5 focus-within:border-primary/40 rounded-xl py-2.5 px-3 text-xs text-white placeholder:text-zinc-400 outline-none transition-colors"
-                          />
-                          <input
-                            type="url"
-                            placeholder="https://example.com/playlist.m3u"
-                            value={importUrl}
-                            onChange={(e) => setImportUrl(e.target.value)}
-                            required
-                            className="w-full bg-white/5 border border-white/10 sm:border-white/5 focus-within:border-primary/40 rounded-xl py-2.5 px-3 text-xs text-white placeholder:text-zinc-400 outline-none transition-colors"
-                          />
-                        </div>
-                      </div>
-
+                  {/* Categories */}
+                  <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    {categories.map((cat) => (
                       <button
-                        type="submit"
-                        disabled={isImporting}
-                        className="mt-4 w-full flex items-center justify-center gap-2 py-3 px-4 bg-primary hover:bg-primary/95 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50 active:scale-95 cursor-pointer"
+                        key={cat}
+                        onClick={() => { setSelectedCategory(cat); setDisplayCount(80); }}
+                        className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold whitespace-nowrap border transition-all ${selectedCategory === cat
+                            ? "bg-primary border-primary text-white shadow-lg shadow-primary/20"
+                            : "bg-zinc-100 dark:bg-white/5 border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-white/10"
+                          }`}
                       >
-                        {isImporting ? (
-                          <>
-                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Importing Stream...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Check size={14} />
-                            <span>Import Playlist</span>
-                          </>
-                        )}
+                        {cat}
                       </button>
-                    </form>
+                    ))}
+                  </div>
+                </div>
 
-                    {/* File Upload Box */}
-                    <div
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                      className={`glass-card p-4 sm:p-5 border rounded-2xl flex flex-col justify-between min-h-[220px] transition-all relative overflow-hidden ${isDragging
-                          ? "border-dashed border-primary bg-primary/10 shadow-[0_0_20px_rgba(139,92,246,0.2)]"
-                          : "border-white/10 sm:border-white/5 bg-white/[0.01] hover:border-primary/20"
-                        }`}
-                    >
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                            <Upload size={18} />
-                          </div>
-                          <h4 className="font-bold text-sm sm:text-base">Upload Playlist File</h4>
+                {/* Channels Grid */}
+                <div className="flex-1 min-h-0 overflow-y-auto pt-3 sm:pt-4 pr-1 custom-scrollbar">
+                  {loading ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {Array.from({ length: 12 }).map((_, idx) => (
+                        <div key={idx} className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-zinc-50 dark:bg-white/[0.02] border border-zinc-200 dark:border-white/10 animate-pulse">
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-zinc-200 dark:bg-white/10" />
+                          <div className="flex-1 space-y-1.5 sm:space-y-2"><div className="h-2.5 sm:h-3 w-1/3 bg-zinc-200 dark:bg-white/10 rounded" /><div className="h-3.5 sm:h-4 w-2/3 bg-zinc-200 dark:bg-white/10 rounded" /></div>
                         </div>
-                        <p className="text-xs text-zinc-300">
-                          Upload local .m3u, .m3u8, or .json playlist files. Stored securely in your browser cache.
-                        </p>
-
-                        <div className="mt-3">
-                          <input
-                            type="text"
-                            placeholder="Playlist Name (Optional)"
-                            value={uploadPlaylistName}
-                            onChange={(e) => setUploadPlaylistName(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 sm:border-white/5 focus-within:border-primary/40 rounded-xl py-2 px-3 text-xs text-white placeholder:text-zinc-400 outline-none transition-colors"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <input
-                          type="file"
-                          ref={fileInputRef}
-                          onChange={handleFileUpload}
-                          accept=".m3u,.m3u8,.json"
-                          className="hidden"
-                        />
-                        <button
-                          onClick={() => fileInputRef.current?.click()}
-                          className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-white/20 text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
-                        >
-                          <Upload size={14} />
-                          <span>Choose M3U or JSON File</span>
+                      ))}
+                    </div>
+                  ) : filteredChannels.length === 0 ? (
+                    <div className="text-center py-12 text-zinc-500 dark:text-zinc-400 text-sm font-medium">
+                      No channels found match your filters.
+                    </div>
+                  ) : (
+                    <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {visibleChannels.map((chan) => {
+                        const isSelected = selectedChannel?.id === chan.id;
+                        return (
+                          <button
+                            key={chan.id}
+                            onClick={() => handleChannelSelect(chan)}
+                            className={`w-full flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-left transition-all group ${isSelected
+                                ? "bg-primary/10 border-primary text-primary"
+                                : "bg-zinc-50 dark:bg-white/[0.02] border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-white/[0.05] hover:border-zinc-300 dark:hover:border-white/10"
+                              }`}
+                          >
+                            {chan.logo ? (
+                              <Image src={chan.logo} alt={chan.name} width={40} height={40} onError={(e) => { (e.currentTarget as HTMLElement).style.display = "none"; }} className="w-9 h-9 sm:w-10 sm:h-10 object-contain rounded-lg sm:rounded-xl bg-white dark:bg-white/5 p-0.5 border border-zinc-200 dark:border-white/10 group-hover:scale-105 transition-transform" />
+                            ) : (
+                              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-tr from-zinc-200 to-zinc-300 dark:from-white/5 dark:to-white/10 flex items-center justify-center font-bold text-xs border border-zinc-300 dark:border-white/10 text-zinc-500 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">
+                                {getInitials(chan.name)}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider ${isSelected ? "text-primary/75" : "text-zinc-500 dark:text-zinc-400"}`}>{chan.group}</p>
+                              <p className="text-[13px] sm:text-sm font-bold truncate">{chan.name}</p>
+                            </div>
+                            {isSelected && <Play size={13} className="sm:w-3.5 sm:h-3.5 fill-primary text-primary animate-pulse" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {hasMore && (
+                      <div className="flex justify-center pt-4 pb-2">
+                        <button onClick={() => setDisplayCount(prev => prev + 80)} className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-zinc-100 dark:bg-white/[0.04] border border-zinc-200 dark:border-white/[0.06] text-xs sm:text-sm font-bold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-white/[0.08] transition-all active:scale-95">
+                          <ChevronsRight size={14} className="rotate-90" />
+                          <span>Load More ({filteredChannels.length - displayCount} remaining)</span>
                         </button>
                       </div>
-
-                      {isDragging && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#070414]/90 backdrop-blur-xs pointer-events-none z-10 border-2 border-dashed border-primary m-1 rounded-xl">
-                          <Upload size={28} className="text-primary animate-bounce mb-2" />
-                          <p className="text-xs font-bold text-white">Drop your file here</p>
-                          <p className="text-[9px] text-zinc-400">supports .m3u, .m3u8, .json</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Validation Errors */}
-                  {importError && (
-                    <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold">
-                      <AlertCircle size={15} className="mt-0.5 flex-shrink-0" />
-                      <span>{importError}</span>
-                    </div>
+                    )}
+                    </>
                   )}
-
                 </div>
-              )}
-            </div>
+              </>
+            ) : (
+              <div className="flex-1 overflow-y-auto pr-1 space-y-6 custom-scrollbar text-left">
+                {/* Import Playlist Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <form onSubmit={handleUrlImport} className="glass-card p-4 sm:p-5 border border-zinc-200 dark:border-white/10 rounded-2xl bg-white dark:bg-white/[0.01] shadow-sm dark:shadow-none flex flex-col justify-between min-h-[180px] hover:border-primary/30 transition-colors">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 rounded-lg bg-primary/10 text-primary"><Link size={18} /></div>
+                        <h4 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-white">Load from URL</h4>
+                      </div>
+                      <div className="space-y-2">
+                        <input type="text" placeholder="Playlist Name (e.g. My IPTV)" value={playlistName} onChange={(e) => setPlaylistName(e.target.value)} className="w-full bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 focus-within:border-primary/40 rounded-xl py-2.5 px-3 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 outline-none transition-colors" />
+                        <input type="url" placeholder="https://example.com/playlist.m3u" value={importUrl} onChange={(e) => setImportUrl(e.target.value)} required className="w-full bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 focus-within:border-primary/40 rounded-xl py-2.5 px-3 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 outline-none transition-colors" />
+                      </div>
+                    </div>
+                    <button type="submit" disabled={isImporting} className="mt-4 w-full flex items-center justify-center gap-2 py-3 px-4 bg-primary hover:bg-primary/95 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50 active:scale-95 cursor-pointer">
+                      {isImporting ? <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>Importing Stream...</span></> : <><Check size={14} /><span>Import Playlist</span></>}
+                    </button>
+                  </form>
+
+                  <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} className={`glass-card p-4 sm:p-5 border rounded-2xl shadow-sm dark:shadow-none flex flex-col justify-between min-h-[220px] transition-all relative overflow-hidden ${isDragging ? "border-dashed border-primary bg-primary/10 shadow-[0_0_20px_rgba(139,92,246,0.2)]" : "border-zinc-200 dark:border-white/10 bg-white dark:bg-white/[0.01] hover:border-primary/30"}`}>
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="p-2 rounded-lg bg-primary/10 text-primary"><Upload size={18} /></div>
+                        <h4 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-white">Upload Playlist File</h4>
+                      </div>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-300">Upload local .m3u, .m3u8, or .json files. Stored securely in your browser cache.</p>
+                      <div className="mt-3">
+                        <input type="text" placeholder="Playlist Name (Optional)" value={uploadPlaylistName} onChange={(e) => setUploadPlaylistName(e.target.value)} className="w-full bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 focus-within:border-primary/40 rounded-xl py-2 px-3 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 outline-none transition-colors" />
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".m3u,.m3u8,.json" className="hidden" />
+                      <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-700 dark:text-white border border-zinc-200 dark:border-white/10 text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer">
+                        <Upload size={14} /><span>Choose M3U or JSON File</span>
+                      </button>
+                    </div>
+                    {isDragging && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 dark:bg-[#070414]/90 backdrop-blur-sm pointer-events-none z-10 border-2 border-dashed border-primary m-1 rounded-xl">
+                        <Upload size={28} className="text-primary animate-bounce mb-2" />
+                        <p className="text-xs font-bold text-zinc-900 dark:text-white">Drop your file here</p>
+                        <p className="text-[9px] text-zinc-500">supports .m3u, .m3u8, .json</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {importError && (
+                  <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold">
+                    <AlertCircle size={15} className="mt-0.5 flex-shrink-0" />
+                    <span>{importError}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           </div>
 
           {/* 4. Footer with Developer Info */}
           <div className="w-full pt-4 md:pt-6 pb-2">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-white/[0.02] border border-white/[0.05]">
-              <div className="flex items-center gap-2">
-                <p className="text-zinc-400 text-[10px] sm:text-xs font-medium">
-                  Watch premium live TV channels directly from official stream
-                  sources.
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="flex items-center px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-[10px] sm:text-xs text-zinc-300 font-medium whitespace-nowrap shadow-sm">
-                  Developed by{" "}
-                  <span className="text-white font-bold ml-1">S. SHAJON</span>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4 py-3 rounded-2xl bg-white dark:bg-white/[0.02] border border-zinc-200 dark:border-white/[0.05] shadow-sm dark:shadow-none">
+              <div className="flex flex-col gap-2">
+                <p className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-xs font-medium">Watch premium live TV channels directly from official stream sources.</p>
+                <span className="flex items-center px-2.5 py-1 w-max rounded-lg bg-zinc-100 dark:bg-white/[0.03] border border-zinc-200 dark:border-white/[0.08] text-[10px] sm:text-xs text-zinc-600 dark:text-zinc-300 font-medium shadow-sm">
+                  Modified by <span className="text-zinc-900 dark:text-white font-bold ml-1">MD SHAMSUZZAMAN FAHIM</span>
                 </span>
-                <a
-                  href="https://github.com/SHAJON-404/iptv"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.08] hover:border-white/[0.18] text-[10px] sm:text-xs text-gray-300 hover:text-white font-semibold transition-all duration-300 shadow-sm whitespace-nowrap"
-                >
-                  <FaGithub size={12} className="opacity-80" />
-                  <span>GitHub Repository</span>
-                </a>
+              </div>
+              <div className="flex flex-col items-start sm:items-end gap-1.5">
+                <p className="text-[8px] sm:text-[9px] text-zinc-500 dark:text-zinc-500 font-bold uppercase tracking-wider">For any support, contact via Telegram only. Follow GitHub for updates!</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="flex items-center px-2 py-1 rounded-lg bg-zinc-50 dark:bg-white/[0.02] border border-zinc-200 dark:border-white/[0.05] text-[9px] sm:text-[10px] text-zinc-500 dark:text-zinc-400 font-medium shadow-sm">
+                    Developed by <span className="text-zinc-800 dark:text-zinc-300 font-bold ml-1">S. SHAJON</span>
+                  </span>
+                  <a href="https://github.com/SHAJON-404/iptv" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-zinc-100 dark:bg-white/[0.04] hover:bg-zinc-200 dark:hover:bg-white/[0.08] border border-zinc-200 dark:border-white/[0.08] text-[9px] sm:text-[10px] text-zinc-600 dark:text-gray-300 hover:text-zinc-900 dark:hover:text-white transition-all shadow-sm">
+                    <FaGithub size={12} /><span>GitHub</span>
+                  </a>
+                  <a href="https://t.me/shajonOTT" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#26A5E4]/10 hover:bg-[#26A5E4]/20 border border-[#26A5E4]/20 text-[9px] sm:text-[10px] text-[#26A5E4] transition-all shadow-sm">
+                    <FaTelegram size={12} /><span>Telegram</span>
+                  </a>
+                </div>
               </div>
             </div>
           </div>
